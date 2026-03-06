@@ -52,11 +52,31 @@ npm install
 # 3. Buat file .env.local (tanyakan ke Leader untuk URL-nya)
 echo EXPO_PUBLIC_CONVEX_URL=<minta-ke-leader> > .env.local
 
-# 4. Jalankan app
+# 4. Jalankan app (WAJIB 2 terminal terpisah)
+# Terminal 1 (Expo)
 npx expo start
+
+# Terminal 2 (Convex)
+npx convex dev
 ```
 
 > **.env.local tidak boleh di-commit ke Git** — sudah ada di `.gitignore`.
+
+### ▶️ Menjalankan Project (2 Terminal)
+
+Jangan jalankan hanya satu command saja. Saat development, jalankan keduanya:
+
+**Terminal A — Expo (frontend mobile)**
+```bash
+npx expo start
+```
+
+**Terminal B — Convex (backend realtime functions + DB sync)**
+```bash
+npx convex dev
+```
+
+Kalau `npx convex dev` tidak jalan, pastikan kamu sudah login Convex dan sudah set `.env.local`.
 
 ---
 
