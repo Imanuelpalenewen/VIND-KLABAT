@@ -1,50 +1,202 @@
-# Welcome to your Expo app 👋
+# VIND KLABAT — Student Information System
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> React Native · Expo SDK 54 · Convex · TypeScript
 
-## Get started
+Mobile app SIS (Student Information System) Universitas Klabat, dibangun dengan Expo Router v6 dan Convex sebagai backend realtime serverless.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## 🧑‍💻 Tim
 
-2. Start the app
+| Peran | Nama | GitHub / ID |
+|---|---|---|
+| Leader / Dev 1 | Imanuel |
+| Dev 2 | Daniel |  
+| Dev 3 | Vanessa |  
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## 🛠 Tech Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+| Layer | Teknologi |
+|---|---|
+| Framework | React Native + Expo SDK 54 |
+| Routing | Expo Router v6 (file-based) |
+| Backend | Convex v1.32 (serverless DB + functions) |
+| Language | TypeScript ~5.9 (strict mode) |
+| Styling | StyleSheet + Design Tokens (`constants/theme.ts`) |
+| Icons | `@expo/vector-icons` (Ionicons) |
+| Storage | AsyncStorage (session) |
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## ✅ Prerequisites
 
-When you're ready, run:
+- **Node.js** 
+- npm atau yarn
+- Expo Go di HP (scan QR) **atau** Android/iOS emulator
+- Akses ke Convex project (Leader akan share `.env.local`)
+
+---
+
+## 🚀 Setup Setelah Clone
 
 ```bash
-npm run reset-project
+# 1. Clone repo
+git clone <repo-url>
+cd vind-klabat
+
+# 2. Install dependencies
+npm install
+
+# 3. Buat file .env.local (tanyakan ke Leader untuk URL-nya)
+echo EXPO_PUBLIC_CONVEX_URL=<minta-ke-leader> > .env.local
+
+# 4. Jalankan app
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+> **.env.local tidak boleh di-commit ke Git** — sudah ada di `.gitignore`.
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## 📁 Struktur Folder
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```
+vind-klabat/
+├── app/                        # Semua route (Expo Router file-based)
+│   ├── _layout.tsx             # ❌ Jangan diubah — root layout + providers
+│   ├── index.tsx               # ❌ Jangan diubah — redirect berdasarkan role
+│   ├── (auth)/
+│   │   ├── _layout.tsx         # ❌ Jangan diubah
+│   │   └── login.tsx           # ✅ Dev 1
+│   ├── (student)/
+│   │   ├── _layout.tsx         # ❌ Jangan diubah
+│   │   ├── schedule.tsx        # ✅ Dev 1
+│   │   ├── grades.tsx          # ✅ Dev 1
+│   │   ├── krs.tsx             # ✅ Dev 2
+│   │   ├── consult-booking.tsx # ✅ Dev 2
+│   │   └── (tabs)/
+│   │       ├── _layout.tsx     # ❌ Jangan diubah
+│   │       ├── index.tsx       # ✅ Dev 1 (dashboard)
+│   │       ├── academics.tsx   # ✅ Dev 1
+│   │       ├── consult.tsx     # ✅ Dev 2
+│   │       ├── news.tsx        # ✅ Dev 2
+│   │       └── profile.tsx     # ✅ Dev 1
+│   └── (lecturer)/
+│       ├── _layout.tsx         # ❌ Jangan diubah
+│       ├── student-list.tsx    # ✅ Dev 3
+│       └── (tabs)/
+│           ├── _layout.tsx     # ❌ Jangan diubah
+│           ├── index.tsx       # ✅ Dev 3 (dashboard)
+│           ├── courses.tsx     # ✅ Dev 3
+│           ├── consult.tsx     # ✅ Dev 3
+│           └── profile.tsx     # ✅ Dev 3
+├── convex/                     # Backend functions
+│   ├── schema.ts               # ❌ Jangan diubah — definisi tabel DB
+│   ├── users.ts                # ✅ Dev 1
+│   ├── courses.ts              # ✅ Dev 2
+│   ├── grades.ts               # ✅ Dev 1 (read) + Dev 3 (input)
+│   ├── consultations.ts        # ✅ Dev 2 + Dev 3
+│   ├── news.ts                 # ✅ Dev 2
+│   └── seed.ts                 # ✅ Koordinasi semua dev
+├── components/
+│   └── ui.tsx                  # ❌ Jangan diubah — shared components
+├── hooks/
+│   ├── useAuth.tsx             # ❌ Jangan diubah
+│   └── useTheme.tsx            # ❌ Jangan diubah
+└── constants/
+    └── theme.ts                # ❌ Jangan diubah — design tokens
+```
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+## 🎨 Komponen UI Tersedia (`components/ui.tsx`)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Komponen | Kegunaan |
+|---|---|
+| `<Card>` | Container berisi konten, bisa `onPress` |
+| `<GradientHeader>` | Header bergradient dengan title + subtitle |
+| `<PrimaryButton>` | Tombol utama (primary / outline / ghost) |
+| `<Badge>` | Label berwarna kecil (status, kategori) |
+| `<SectionHeader>` | Judul section dengan optional action link |
+| `<StatChip>` | Chip nilai statistik di dalam gradient header |
+| `<Divider>` | Garis pembatas horizontal |
+| `<EmptyState>` | Tampilan kosong dengan emoji + teks |
+
+**Cara pakai:**
+```tsx
+import { Card, PrimaryButton, Badge } from "@/components/ui";
+```
+
+---
+
+## 🎨 Design Tokens (`constants/theme.ts`)
+
+Selalu gunakan `useTheme().colors` — jangan hardcode hex.
+
+```tsx
+const { colors } = useTheme();
+
+// Contoh penggunaan
+<View style={{ backgroundColor: colors.bg }}>
+<Text style={{ color: colors.text }}>Hello</Text>
+<Text style={{ color: colors.primary }}>Primary</Text>
+```
+
+| Token | Keterangan |
+|---|---|
+| `colors.bg` | Background utama halaman |
+| `colors.surface` | Background kartu / panel |
+| `colors.text` | Teks utama |
+| `colors.textMuted` | Teks abu-abu / sekunder |
+| `colors.primary` | Warna brand utama (ungu) |
+| `colors.success/warning/danger/info` | Status colors |
+| `colors.gradients.main` | Gradient header (biru gelap) |
+| `colors.gradients.primary` | Gradient tombol utama |
+
+---
+
+## ⚙️ Convex: Cara Pakai Query & Mutation
+
+```tsx
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+
+// Query (read data)
+const courses = useQuery(api.courses.getEnrolledCourses, { studentId, semester });
+
+// Mutation (write data)
+const enroll = useMutation(api.courses.enrollCourse);
+await enroll({ studentId, courseId, semester });
+```
+
+> Pastikan fungsi sudah diimplementasikan di file `convex/*.ts` sebelum dipanggil dari screen.
+
+---
+
+## 🔧 Troubleshooting
+
+| Masalah | Solusi |
+|---|---|
+| `Cannot find module '@/hooks/useAuth'` | Cek `tsconfig.json` path alias sudah benar |
+| `EXPO_PUBLIC_CONVEX_URL is not set` | Buat `.env.local` dan isi URL dari Leader |
+| App kosong / putih | Jalankan `npx expo start --clear` |
+| Convex error `function not found` | Implementasikan fungsi di `convex/*.ts` terlebih dulu |
+| Metro bundler stuck | Tekan `r` di terminal untuk reload |
+| Type error pada `router.push` | Tambahkan `as any` sementara: `router.push("..." as any)` |
+
+---
+
+## 📋 Panduan Kolaborasi
+
+Baca [docs/COLLABORATION.md](docs/COLLABORATION.md) untuk:
+- Git branching strategy
+- Cara setup setelah clone
+- Commit message convention
+- Cara membuat PR
+- Proses merge oleh Leader
+
+---
+
+*VIND KLABAT v1.0.0 · Universitas Klabat · 2025*
