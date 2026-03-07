@@ -5,6 +5,7 @@ export default defineSchema({
   // ─── Users ────────────────────────────────────────────────────────────────
   users: defineTable({
     username: v.string(),       // NIM (student) or NIDN (lecturer)
+    email: v.optional(v.string()),  // Email for login
     password: v.string(),       // Plain text for prototype only
     role: v.union(v.literal("student"), v.literal("lecturer")),
     name: v.string(),
@@ -18,6 +19,7 @@ export default defineSchema({
     title: v.optional(v.string()),
   })
     .index("by_username", ["username"])
+    .index("by_email", ["email"])
     .index("by_role", ["role"]),
 
   // ─── Courses ──────────────────────────────────────────────────────────────
