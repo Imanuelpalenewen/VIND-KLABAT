@@ -31,7 +31,7 @@ export default function KrsScreen() {
       <EmptyState
         emoji="📋"
         title="Course Registration"
-        subtitle="Developer 1 — Implement KRS: course list with select/deselect and credit limit here"
+        subtitle="Developer 2 — Implement KRS: course list with select/deselect and credit limit here"
       />
     </View>
   );
