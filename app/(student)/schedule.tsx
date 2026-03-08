@@ -1,40 +1,209 @@
-import { View, StyleSheet, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+/**
+ * schedule.tsx — Student Weekly Schedule
+ *
+ * NOTE: Uses dummy data (dummyScheduleData.ts) for semesters 1–5
+ * while Dev 2's KRS enrollment feature is pending.
+ * TODO: Replace dummy data lookup with:
+ *   useQuery(api.courses.getEnrolledCourses, { studentId: user._id, semester: selectedSemester })
+ * once feat/student-krs is merged.
+ */
+
+import useAuth from "@/hooks/useAuth";
 import useTheme from "@/hooks/useTheme";
-import { GradientHeader, EmptyState } from "@/components/ui";
+import { Card, EmptyState, GradientHeader } from "@/components/ui";
+import { getDummySemesterSchedule, ScheduleCourse } from "./dummyScheduleData";
+import { useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// TODO (Dev 1 — feat/student-schedule):
-// Buat halaman jadwal mingguan mahasiswa dengan:
-// - Day picker horizontal: Senin – Jumat (highlight hari ini)
-// - List mata kuliah per hari: nama MK, jam, ruang, nama dosen
-// - Jika tidak ada kuliah hari itu, tampilkan EmptyState
-// - Query: api.courses.getEnrolledCourses({ studentId, semester })
-// Komponen: Card, GradientHeader dari @/components/ui
-// Token: colors.info untuk highlight jadwal
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
+const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+const DAY_ID: Record<string, string> = {
+  Monday: "Senin", Tuesday: "Selasa", Wednesday: "Rabu",
+  Thursday: "Kamis", Friday: "Jumat",
+};
 
+function getTodayDay(): string {
+  const d = new Date().getDay(); // 0=Sun, 1=Mon…5=Fri, 6=Sat
+  if (d === 0 || d === 6) return "Monday"; // weekend → default Monday
+  return DAYS[d - 1];
+}
 
 export default function ScheduleScreen() {
+  const { user } = useAuth();
   const { colors } = useTheme();
-  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const maxSemester = user?.semester ?? 1;
+  const [selectedSemester, setSelectedSemester] = useState(maxSemester);
+  const [selectedDay, setSelectedDay] = useState(getTodayDay());
+
+  // ── Dummy data (temporary until Dev 2 KRS is live) ──────────────────────────
+  const semesterData = getDummySemesterSchedule(user?.nim, user?.email, selectedSemester);
+  const allCourses: ScheduleCourse[] = semesterData?.courses ?? [];
+  const todayCourses = allCourses.filter((c) => c.day === selectedDay);
+
+  // Separate credited vs non-credit for the summary row
+  const creditedCount = allCourses.filter((c) => c.credits > 0).length;
+  const nonCreditCount = allCourses.filter((c) => c.credits === 0).length;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <GradientHeader title="Schedule" subtitle="Weekly timetable">
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={20} color="#fff" />
-        </TouchableOpacity>
-      </GradientHeader>
-      <EmptyState
-        emoji="🗓️"
-        title="Weekly Schedule"
-        subtitle="Developer 2 — Implement weekly timetable with day picker and timeline here"
+      <GradientHeader
+        title="Jadwal Kuliah"
+        subtitle={
+          semesterData
+            ? `Semester ${selectedSemester}  ·  ${semesterData.period}`
+            : `Semester ${selectedSemester}`
+        }
       />
+
+      {/* ── Semester Selector ────────────────────────────────────────────────── */}
+      <View style={[styles.semesterBar, { backgroundColor: colors.surface, borderBottomColor: colors.divider }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.semesterScroll}>
+          {Array.from({ length: maxSemester }, (_, i) => i + 1).map((sem) => {
+            const active = sem === selectedSemester;
+            return (
+              <TouchableOpacity
+                key={sem}
+                onPress={() => setSelectedSemester(sem)}
+                style={[
+                  styles.semBtn,
+                  active
+                    ? { backgroundColor: colors.primary }
+                    : { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.divider },
+                ]}
+              >
+                <Text style={[styles.semBtnText, { color: active ? "#fff" : colors.textMuted }]}>
+                  Sem {sem}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* SKS summary for selected semester */}
+        {semesterData && (
+          <View style={[styles.sksSummary, { borderTopColor: colors.divider }]}>
+            <Text style={[styles.sksText, { color: colors.textMuted }]}>
+              <Text style={{ color: colors.primary, fontWeight: "700" }}>{semesterData.totalCredits} SKS</Text>
+              {"  ·  "}
+              {creditedCount} MK berkredit{"  ·  "}
+              {nonCreditCount > 0 && `${nonCreditCount} non-SKS`}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* ── Day Picker ───────────────────────────────────────────────────────── */}
+      <View style={[styles.dayRow, { backgroundColor: colors.surface, borderBottomColor: colors.divider }]}>
+        {DAYS.map((day, i) => {
+          const active = selectedDay === day;
+          const isToday = day === getTodayDay();
+          return (
+            <TouchableOpacity key={day} onPress={() => setSelectedDay(day)} style={styles.dayBtn}>
+              <Text style={[styles.dayShort, { color: active ? colors.primary : colors.textMuted }]}>
+                {DAY_SHORT[i]}
+              </Text>
+              <View
+                style={[
+                  styles.dayCircle,
+                  active && { backgroundColor: colors.primary },
+                  !active && isToday && { borderWidth: 1.5, borderColor: colors.primary },
+                ]}
+              >
+                <Text style={[styles.dayNum, { color: active ? "#fff" : colors.text }]}>
+                  {i + 1}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* ── Course List ──────────────────────────────────────────────────────── */}
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {todayCourses.length === 0 ? (
+          <EmptyState
+            emoji="📭"
+            title={`Tidak ada kuliah hari ${DAY_ID[selectedDay] ?? selectedDay}`}
+            subtitle="Tidak ada mata kuliah terjadwal. Selamat istirahat!"
+          />
+        ) : (
+          todayCourses.map((course, idx) => {
+            const isNonCredit = course.credits === 0;
+            const dotColor = isNonCredit ? colors.textMuted : colors.info;
+            return (
+              <Card key={`${course.code}-${course.day}-${idx}`} style={styles.courseCard}>
+                {/* Time row */}
+                <View style={styles.timeRow}>
+                  <View style={[styles.timeDot, { backgroundColor: dotColor }]} />
+                  <Text style={[styles.time, { color: dotColor }]}>{course.time}</Text>
+                  {isNonCredit && (
+                    <View style={[styles.nonCreditBadge, { backgroundColor: colors.divider }]}>
+                      <Text style={[styles.nonCreditText, { color: colors.textMuted }]}>Non-SKS</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.courseName, { color: colors.text }]}>{course.name}</Text>
+                <Text style={[styles.courseCode, { color: colors.textMuted }]}>{course.code}</Text>
+                <View style={styles.metaRow}>
+                  <MetaChip icon="📍" label={course.room} colors={colors} />
+                  {course.lecturerName !== "—" && (
+                    <MetaChip icon="👤" label={course.lecturerName} colors={colors} />
+                  )}
+                  {course.credits > 0 && (
+                    <MetaChip icon="📚" label={`${course.credits} SKS`} colors={colors} />
+                  )}
+                </View>
+              </Card>
+            );
+          })
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+function MetaChip({ icon, label, colors }: { icon: string; label: string; colors: any }) {
+  return (
+    <View style={styles.metaChip}>
+      <Text style={styles.metaIcon}>{icon}</Text>
+      <Text style={[styles.metaText, { color: colors.textMuted }]}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  backBtn: { position: "absolute", top: 16, left: 16 },
+  container:       { flex: 1 },
+  // Semester selector
+  semesterBar:     { borderBottomWidth: 1 },
+  semesterScroll:  { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: "row" },
+  semBtn:          { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  semBtnText:      { fontSize: 13, fontWeight: "600" },
+  sksSummary:      { paddingHorizontal: 16, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth },
+  sksText:         { fontSize: 12 },
+  // Day picker
+  dayRow:          { flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, borderBottomWidth: 1 },
+  dayBtn:          { alignItems: "center", gap: 6 },
+  dayShort:        { fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
+  dayCircle:       { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  dayNum:          { fontSize: 14, fontWeight: "700" },
+  // Course cards
+  scroll:          { padding: 16, gap: 12 },
+  courseCard:      {},
+  timeRow:         { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
+  timeDot:         { width: 8, height: 8, borderRadius: 4 },
+  time:            { fontSize: 13, fontWeight: "700", flex: 1 },
+  nonCreditBadge:  { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  nonCreditText:   { fontSize: 10, fontWeight: "600" },
+  courseName:      { fontSize: 16, fontWeight: "700", marginBottom: 2 },
+  courseCode:      { fontSize: 12, fontWeight: "600", marginBottom: 10 },
+  metaRow:         { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  metaChip:        { flexDirection: "row", alignItems: "center", gap: 4 },
+  metaIcon:        { fontSize: 12 },
+  metaText:        { fontSize: 12 },
 });
