@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as courses from "../courses.js";
+import type * as enrollment from "../enrollment.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 
@@ -18,6 +20,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  courses: typeof courses;
+  enrollment: typeof enrollment;
   seed: typeof seed;
   users: typeof users;
 }>;

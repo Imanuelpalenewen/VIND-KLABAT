@@ -1,7 +1,6 @@
-// ─── Lecturer Tabs — Developer 3 ─────────────────────────────────────────────
-import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import useTheme from "@/hooks/useTheme";
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
 export default function LecturerTabsLayout() {
   const { colors } = useTheme();
@@ -9,20 +8,21 @@ export default function LecturerTabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           backgroundColor: colors.surface,
+          borderTopWidth: 1,
           borderTopColor: colors.border,
           height: 90,
-          paddingBottom: 20,
+          paddingBottom: 30,
           paddingTop: 10,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: "600",
         },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -30,7 +30,7 @@ export default function LecturerTabsLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
       />
@@ -39,7 +39,7 @@ export default function LecturerTabsLayout() {
         options={{
           title: "Courses",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book" size={size} color={color} />
+            <Ionicons name="library-outline" size={size} color={color} />
           ),
         }}
       />
@@ -48,7 +48,11 @@ export default function LecturerTabsLayout() {
         options={{
           title: "Consult",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles" size={size} color={color} />
+            <Ionicons
+              name="chatbubbles-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -57,7 +61,11 @@ export default function LecturerTabsLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+            <Ionicons
+              name="person-circle-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
