@@ -1,9 +1,8 @@
 import useAuth from "@/hooks/useAuth";
 import useTheme from "@/hooks/useTheme";
-import { Card, Divider, PrimaryButton } from "@/components/ui";
+import { Card, Divider } from "@/components/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
 import {
   Alert,
   ScrollView,
@@ -12,52 +11,63 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type MenuItem = {
-  icon: string;
+// ─── CV Section Header ────────────────────────────────────────────────────────
+function CVSection({
+  icon,
+  title,
+  children,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.cvSection}>
+      {/* Title row */}
+      <View style={styles.cvSectionHeader}>
+        <View style={[styles.cvSectionIcon, { backgroundColor: `${colors.primary}15` }]}>
+          <Ionicons name={icon} size={14} color={colors.primary} />
+        </View>
+        <Text style={[styles.cvSectionTitle, { color: colors.text }]}>{title}</Text>
+        <View style={[styles.cvSectionLine, { backgroundColor: colors.border }]} />
+      </View>
+      {children}
+    </View>
+  );
+}
+
+// ─── CV Info Row (label + value) ──────────────────────────────────────────────
+function CVRow({
+  label,
+  value,
+  valueColor,
+}: {
   label: string;
-  sub: string;
-  route: any;
-};
+  value: string;
+  valueColor?: string;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.cvRow}>
+      <Text style={[styles.cvRowLabel, { color: colors.textMuted }]}>{label}</Text>
+      <Text style={[styles.cvRowValue, { color: valueColor ?? colors.text }]}>{value}</Text>
+    </View>
+  );
+}
 
-const MENU_ITEMS: MenuItem[] = [
-  {
-    icon: "person-outline",
-    label: "Edit Profile",
-    sub: "Update your information",
-    route: "/(lecturer)/profile/edit",
-  },
-  {
-    icon: "notifications-outline",
-    label: "Notifications",
-    sub: "Manage push notifications",
-    route: "/(lecturer)/settings/notifications",
-  },
-  {
-    icon: "shield-checkmark-outline",
-    label: "Security",
-    sub: "Password & authentication",
-    route: "/(lecturer)/settings/security",
-  },
-  {
-    icon: "help-circle-outline",
-    label: "Help & Support",
-    sub: "FAQs and contact us",
-    route: "/(lecturer)/settings/help",
-  },
-  {
-    icon: "document-text-outline",
-    label: "Terms & Privacy",
-    sub: "Legal information",
-    route: "/(lecturer)/settings/terms",
-  },
-];
 
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
-  const { colors, isDarkMode, toggleDarkMode } = useTheme();
+  const { colors } = useTheme();
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
+
+  const isStudent = user?.role === "student";
 
   const handleLogout = () =>
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -75,321 +85,286 @@ export default function ProfileScreen() {
   return (
     <ScrollView
       style={[styles.scroll, { backgroundColor: colors.bg }]}
-      contentContainerStyle={{ paddingBottom: 100 }}
+      contentContainerStyle={{ paddingBottom: 60 }}
       showsVerticalScrollIndicator={false}
     >
+      {/* ── Hero Header ── */}
       <LinearGradient
         colors={colors.gradients.main}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top + 16 }]}
+        style={[styles.hero, { paddingTop: insets.top + 24 }]}
       >
-        <View style={styles.heroDeco} />
+        <View style={styles.heroDeco1} />
+        <View style={styles.heroDeco2} />
 
-        <LinearGradient colors={colors.gradients.sky} style={styles.avatar}>
-          <Ionicons name="person" size={32} color="#fff" />
-        </LinearGradient>
-
-        <Text style={styles.name}>{user?.name}</Text>
-
-        <Text style={styles.roleText}>
-          {user?.role === "student"
-            ? `${user.nim} · ${user.program}`
-            : `${user?.nidn} · ${user?.department}`}
-        </Text>
-
-        <View style={styles.chipRow}>
-          <View style={styles.chip}>
-            <Text style={styles.chipText}>
-              {user?.role === "student"
-                ? `Semester ${user.semester}`
-                : user?.title}
+        {/* Avatar circle */}
+        <View style={styles.avatarRing}>
+          <LinearGradient colors={colors.gradients.sky} style={styles.avatar}>
+            <Text style={styles.avatarInitials}>
+              {user?.name?.split(" ").map((w) => w[0]).slice(0, 2).join("") ?? "?"}
             </Text>
-          </View>
+          </LinearGradient>
+          <View style={[styles.onlineDot, { borderColor: colors.primaryDeep }]} />
+        </View>
 
-          <View
-            style={[
-              styles.chip,
-              { backgroundColor: "rgba(62,207,174,0.25)" },
-            ]}
-          >
-            <Text style={[styles.chipText, { color: "#3ECFAE" }]}>
-              {user?.role === "student"
-                ? "Active Student"
-                : "Active Lecturer"}
-            </Text>
+        {/* Name */}
+        <Text style={styles.heroName}>{user?.name}</Text>
+
+        {/* Role tag */}
+        <View style={styles.roleTag}>
+          <Ionicons
+            name={isStudent ? "school-outline" : "briefcase-outline"}
+            size={11}
+            color="rgba(255,255,255,0.7)"
+          />
+          <Text style={styles.roleTagText}>
+            {isStudent ? "Mahasiswa" : "Dosen"} · Universitas Klabat
+          </Text>
+        </View>
+
+        {/* Contact pills */}
+        <View style={styles.contactRow}>
+          <View style={styles.contactPill}>
+            <Ionicons name="mail-outline" size={11} color="rgba(255,255,255,0.6)" />
+            <Text style={styles.contactPillText}>{user?.email ?? "—"}</Text>
           </View>
+          <View style={styles.contactPill}>
+            <Ionicons name="call-outline" size={11} color="rgba(255,255,255,0.6)" />
+            <Text style={styles.contactPillText}>+62 812-0000-0000</Text>
+          </View>
+        </View>
+
+        {/* Stats strip */}
+        <View style={styles.statsStrip}>
+          {isStudent ? (
+            <>
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: "#3ECFAE" }]}>3.87</Text>
+                <Text style={styles.statLabel}>GPA</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: "#4EADFF" }]}>92</Text>
+                <Text style={styles.statLabel}>SKS</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: "#FFAA3B" }]}>6</Text>
+                <Text style={styles.statLabel}>Courses</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: "#FF6B8A" }]}>Sem {user?.semester}</Text>
+                <Text style={styles.statLabel}>Semester</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: "#4EADFF" }]}>3</Text>
+                <Text style={styles.statLabel}>Courses</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: "#3ECFAE" }]}>115</Text>
+                <Text style={styles.statLabel}>Students</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: "#FFAA3B" }]}>8 SKS</Text>
+                <Text style={styles.statLabel}>Teaching Load</Text>
+              </View>
+            </>
+          )}
         </View>
       </LinearGradient>
 
+      {/* ── CV Body ── */}
       <View style={styles.body}>
-        {/* Dark Mode */}
-        <Card style={styles.darkModeCard}>
-          <View style={styles.darkModeLeft}>
-            <View
-              style={[
-                styles.darkModeIcon,
-                { backgroundColor: `${colors.primary}18` },
-              ]}
-            >
-              <Ionicons
-                name={isDarkMode ? "moon" : "sunny-outline"}
-                size={18}
-                color={colors.primary}
-              />
-            </View>
 
-            <View>
-              <Text style={[styles.darkModeLabel, { color: colors.text }]}>
-                Dark Mode
-              </Text>
-              <Text
-                style={[styles.darkModeSub, { color: colors.textMuted }]}
-              >
-                {isDarkMode ? "Currently dark" : "Currently light"}
-              </Text>
-            </View>
-          </View>
+        {/* ── Identity ── */}
+        <CVSection icon="person-outline" title="Identity">
+          <Card padding={0} style={styles.cvCard}>
+            <CVRow label="Full Name"  value={user?.name ?? "—"} />
+            <Divider />
+            {isStudent ? (
+              <>
+                <CVRow label="NIM"          value={user?.nim ?? "—"} />
+                <Divider />
+                <CVRow label="Program Studi" value={user?.program ?? "—"} />
+                <Divider />
+                <CVRow label="Semester"      value={`${user?.semester} (Active)`} valueColor={colors.success} />
+              </>
+            ) : (
+              <>
+                <CVRow label="NIDN"       value={user?.nidn ?? "—"} />
+                <Divider />
+                <CVRow label="Department" value={user?.department ?? "—"} />
+                <Divider />
+                <CVRow label="Position"   value={user?.title ?? "—"} valueColor={colors.success} />
+              </>
+            )}
+            <Divider />
+            <CVRow label="Academic Year" value="2024 / 2025" />
+            <Divider />
+            <CVRow label="Campus"        value="Universitas Klabat, Airmadidi" />
+            <Divider />
+            <CVRow label="Phone"         value="+62 812-0000-0000" />
+            <Divider />
+            <CVRow label="Email"         value={user?.email ?? "—"} />
+          </Card>
+        </CVSection>
 
-          <TouchableOpacity
-            onPress={toggleDarkMode}
-            style={[
-              styles.toggle,
-              {
-                backgroundColor: isDarkMode
-                  ? colors.primary
-                  : colors.border,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.toggleThumb,
-                {
-                  transform: [{ translateX: isDarkMode ? 20 : 0 }],
-                },
-              ]}
-            />
-          </TouchableOpacity>
-        </Card>
 
-        {/* Settings */}
-        <Text style={[styles.menuSection, { color: colors.textMuted }]}>
-          Settings
-        </Text>
-
-        <Card padding={0} style={{ marginBottom: 20 }}>
-          {MENU_ITEMS.map((item, i) => (
-            <View key={item.label}>
-              <TouchableOpacity
-                style={styles.menuItem}
-                activeOpacity={0.7}
-                onPress={() => router.push(item.route)}
-              >
-                <View
-                  style={[
-                    styles.menuIcon,
-                    { backgroundColor: `${colors.primary}12` },
-                  ]}
-                >
-                  <Ionicons
-                    name={item.icon as any}
-                    size={18}
-                    color={colors.primary}
-                  />
-                </View>
-
-                <View style={styles.menuInfo}>
-                  <Text
-                    style={[styles.menuLabel, { color: colors.text }]}
-                  >
-                    {item.label}
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.menuSub,
-                      { color: colors.textMuted },
-                    ]}
-                  >
-                    {item.sub}
-                  </Text>
-                </View>
-
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={colors.textMuted}
-                />
-              </TouchableOpacity>
-
-              {i < MENU_ITEMS.length - 1 && <Divider />}
-            </View>
-          ))}
-        </Card>
-
-        <PrimaryButton
-          label="Sign Out"
+        {/* ── Logout ── */}
+        <TouchableOpacity
           onPress={handleLogout}
-          variant="outline"
-          style={{ marginBottom: 12 }}
-        />
+          activeOpacity={0.8}
+          style={[styles.logoutBtn, { borderColor: colors.danger }]}
+        >
+          <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+          <Text style={[styles.logoutText, { color: colors.danger }]}>Sign Out</Text>
+        </TouchableOpacity>
 
-        <Text style={[styles.version, { color: colors.textMuted }]}>
-          VIND KLABAT v1.0.0 · Universitas Klabat
-        </Text>
+        {/* ── Footer ── */}
+        <View style={styles.footer}>
+          <LinearGradient colors={["#4EADFF", "#7B6FF0"]} style={styles.footerLogo}>
+            <Text style={styles.footerLogoText}>VK</Text>
+          </LinearGradient>
+          <Text style={[styles.footerApp, { color: colors.text }]}>VIND KLABAT</Text>
+          <Text style={[styles.footerSub, { color: colors.textMuted }]}>
+            Student Information System · Universitas Klabat
+          </Text>
+        </View>
+
       </View>
     </ScrollView>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
 
-  header: {
+  // Hero
+  hero: {
     paddingHorizontal: 24,
-    paddingBottom: 32,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    paddingBottom: 36,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
     alignItems: "center",
+    overflow: "hidden",
+    shadowColor: "#0B1437",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  heroDeco1: {
+    position: "absolute", top: -60, right: -60,
+    width: 240, height: 240, borderRadius: 120,
+    backgroundColor: "rgba(76,59,207,0.28)",
+  },
+  heroDeco2: {
+    position: "absolute", bottom: -20, left: -40,
+    width: 160, height: 160, borderRadius: 80,
+    backgroundColor: "rgba(78,173,255,0.12)",
   },
 
-  heroDeco: {
-    position: "absolute",
-    top: -40,
-    right: -40,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: "rgba(76,59,207,0.3)",
-  },
-
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
-
-  name: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "800",
-  },
-
-  roleText: {
-    color: "rgba(255,255,255,0.55)",
-    fontSize: 13,
-    marginTop: 4,
-  },
-
-  chipRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-  },
-
-  chip: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+  // Avatar
+  avatarRing: {
+    position: "relative",
+    marginBottom: 16,
+    padding: 4,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  avatar: {
+    width: 90, height: 90, borderRadius: 45,
+    alignItems: "center", justifyContent: "center",
+  },
+  avatarInitials: {
+    color: "#fff", fontSize: 32, fontWeight: "900", letterSpacing: -1,
+  },
+  onlineDot: {
+    position: "absolute", bottom: 4, right: 4,
+    width: 16, height: 16, borderRadius: 8,
+    backgroundColor: "#3ECFAE", borderWidth: 2.5,
   },
 
-  chipText: {
-    color: "rgba(255,255,255,0.9)",
-    fontSize: 10,
-    fontWeight: "600",
+  // Hero text
+  heroName: { color: "#fff", fontSize: 24, fontWeight: "900", letterSpacing: 0.3 },
+  roleTag: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    marginTop: 6,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999,
   },
+  roleTagText: { color: "rgba(255,255,255,0.75)", fontSize: 11, fontWeight: "600" },
 
-  body: {
-    padding: 20,
+  // Contact pills
+  contactRow:  { flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap", justifyContent: "center" },
+  contactPill: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
   },
+  contactPillText: { color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: "500" },
 
-  darkModeCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
+  // Stats
+  statsStrip: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 18, paddingVertical: 14, paddingHorizontal: 20,
+    marginTop: 20, width: "100%",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
   },
+  statItem:   { flex: 1, alignItems: "center" },
+  statValue:  { fontSize: 18, fontWeight: "900" },
+  statLabel:  {
+    color: "rgba(255,255,255,0.4)", fontSize: 9, fontWeight: "600",
+    textTransform: "uppercase", letterSpacing: 0.5, marginTop: 3,
+  },
+  statDivider: { width: 1, height: 32, marginHorizontal: 4 },
 
-  darkModeLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
+  // Body
+  body: { paddingHorizontal: 20, paddingTop: 28 },
 
-  darkModeIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
+  // CV Section
+  cvSection: { marginBottom: 28 },
+  cvSectionHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 },
+  cvSectionIcon: {
+    width: 26, height: 26, borderRadius: 8,
+    alignItems: "center", justifyContent: "center",
   },
+  cvSectionTitle: { fontSize: 13, fontWeight: "800", letterSpacing: 0.3 },
+  cvSectionLine:  { flex: 1, height: 1 },
 
-  darkModeLabel: {
-    fontSize: 14,
-    fontWeight: "600",
+  // CV Card rows
+  cvCard: { marginBottom: 0 },
+  cvRow: {
+    flexDirection: "row", justifyContent: "space-between",
+    alignItems: "center", paddingHorizontal: 16, paddingVertical: 13,
+    gap: 12,
   },
+  cvRowLabel: { fontSize: 12, fontWeight: "500", flexShrink: 0 },
+  cvRowValue: { fontSize: 13, fontWeight: "700", textAlign: "right", flex: 1 },
 
-  darkModeSub: {
-    fontSize: 11,
+  // Logout
+  logoutBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 10, paddingVertical: 14, borderRadius: 16,
+    borderWidth: 1.5, marginBottom: 24,
   },
+  logoutText: { fontSize: 15, fontWeight: "700" },
 
-  toggle: {
-    width: 46,
-    height: 26,
-    borderRadius: 13,
-    padding: 3,
-  },
-
-  toggleThumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#fff",
-  },
-
-  menuSection: {
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 10,
-  },
-
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    padding: 16,
-  },
-
-  menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  menuInfo: {
-    flex: 1,
-  },
-
-  menuLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-
-  menuSub: {
-    fontSize: 11,
-  },
-
-  version: {
-    textAlign: "center",
-    fontSize: 11,
-  },
+  // Footer
+  footer:         { alignItems: "center", paddingVertical: 32, gap: 6 },
+  footerLogo:     { width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  footerLogoText: { color: "#fff", fontSize: 14, fontWeight: "900" },
+  footerApp:      { fontSize: 13, fontWeight: "800", letterSpacing: 2 },
+  footerSub:      { fontSize: 10 },
 });

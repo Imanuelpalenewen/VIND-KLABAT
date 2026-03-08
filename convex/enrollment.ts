@@ -1,21 +1,31 @@
-import { query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-export const getStudentsByCourse = query({
-  args: { courseId: v.id("courses") },
-
+export const enrollStudent = mutation({
+  args: {
+    studentId: v.id("users"),
+    courseId: v.id("courses"),
+    semester: v.number(),
+    status: v.union(v.literal("enrolled"), v.literal("dropped")),
+  },
   handler: async (ctx, args) => {
-    const enrollments = await ctx.db
+    return await ctx.db.insert("enrollments", {
+      studentId: args.studentId,
+      courseId: args.courseId,
+      semester: args.semester,
+      status: args.status,
+    });
+  },
+});
+
+export const getEnrollmentsByCourse = query({
+  args: {
+    courseId: v.id("courses"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
       .query("enrollments")
-      .filter((q) =>
-        q.eq(q.field("courseId"), args.courseId)
-      )
+      .withIndex("by_course", (q) => q.eq("courseId", args.courseId))
       .collect();
-
-    const students = await Promise.all(
-      enrollments.map((e) => ctx.db.get(e.studentId))
-    );
-
-    return students;
   },
 });
