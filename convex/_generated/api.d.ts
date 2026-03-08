@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as krs from "../krs.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 
@@ -18,6 +19,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  krs: typeof krs;
   seed: typeof seed;
   users: typeof users;
 }>;
