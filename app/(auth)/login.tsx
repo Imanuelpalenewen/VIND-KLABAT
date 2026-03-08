@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import useAuth, { UserRole } from "@/hooks/useAuth";
 import useTheme from "@/hooks/useTheme";
 import { PrimaryButton } from "@/components/ui";
@@ -21,6 +22,7 @@ export default function LoginScreen() {
   const { login, isLoading } = useAuth();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [role, setRole] = useState<UserRole>("student");
   const [email, setEmail] = useState("");
@@ -40,6 +42,11 @@ export default function LoginScreen() {
     }
     try {
       await login(email.trim(), password, role);
+      if (role === "student") {
+        router.replace("/(student)/(tabs)/" as any);
+      } else {
+        router.replace("/(lecturer)/(tabs)/" as any);
+      }
     } catch (e: any) {
       const msg = e?.message ?? "Login failed";
       setError(msg.includes("not found") ? "User not found" : msg.includes("password") ? "Invalid password" : msg);
