@@ -10,6 +10,7 @@
 
 import type * as courses from "../courses.js";
 import type * as grades from "../grades.js";
+import type * as news from "../news.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 
@@ -22,6 +23,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   courses: typeof courses;
   grades: typeof grades;
+  news: typeof news;
   seed: typeof seed;
   users: typeof users;
 }>;
