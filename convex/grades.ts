@@ -118,21 +118,28 @@ export const getStudentsByCourse = query({
       .withIndex("by_course", (q) => q.eq("courseId", args.courseId))
       .collect();
 
-    const students = await Promise.all(
-      enrollments.map(async (enroll) => {
-        const student = await ctx.db.get(enroll.studentId);
+    // Deduplicate — satu studentId hanya muncul sekali
+    const seen = new Set<string>();
+    const uniqueEnrollments = enrollments.filter((e) => {
+      const key = e.studentId.toString();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
+    const students = await Promise.all(
+      uniqueEnrollments.map(async (enroll) => {
+        const student = await ctx.db.get(enroll.studentId);
         const studentGrade = grades.find(
           (g) => g.studentId === enroll.studentId
         );
-
         return {
           studentId: enroll.studentId,
-          nim: student?.nim ?? "-",   // ✅ NIM ditambahkan
+          nim: student?.nim ?? "-",
           name: student?.name ?? "Unknown",
           grade: studentGrade?.grade ?? "-",
         };
-      })
+      }),
     );
 
     return students;

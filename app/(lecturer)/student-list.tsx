@@ -46,7 +46,7 @@ function gradeRank(g?: string): number {
   return i === -1 ? 99 : i;
 }
 
-const FILTER_TABS = ["All", "Graded", "Pending"];
+const FILTER_TABS = ["Semua", "Dinilai", "Belum Dinilai"];
 
 export default function StudentListScreen() {
   const { colors } = useTheme();
@@ -58,7 +58,7 @@ export default function StudentListScreen() {
   }>();
 
   const [search,    setSearch]    = useState("");
-  const [activeTab, setActiveTab] = useState("All");
+  const [activeTab, setActiveTab] = useState("Semua");
 
   const students = useQuery(
     api.grades.getStudentsByCourse,
@@ -77,8 +77,8 @@ export default function StudentListScreen() {
         (s.name?.toLowerCase() ?? "").includes(q) ||
         (s.nim ?? "").includes(q);
       const matchTab =
-        activeTab === "All"     ? true :
-        activeTab === "Graded"  ? (s.grade && s.grade !== "-") :
+        activeTab === "Semua"     ? true :
+        activeTab === "Dinilai"  ? (s.grade && s.grade !== "-") :
                                   (!s.grade || s.grade === "-");
       return matchSearch && matchTab;
     });
@@ -92,7 +92,7 @@ export default function StudentListScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.bg }]}>
         <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={[styles.loadingText, { color: colors.textMuted }]}>Loading students...</Text>
+        <Text style={[styles.loadingText, { color: colors.textMuted }]}>Memuat daftar mahasiswa...</Text>
       </View>
     );
   }
@@ -115,7 +115,7 @@ export default function StudentListScreen() {
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>{courseName}</Text>
-        <Text style={styles.headerSub}>{safeStudents.length} Enrolled Students</Text>
+        <Text style={styles.headerSub}>{safeStudents.length} Mahasiswa Terdaftar</Text>
 
         {/* Stats strip */}
         <View style={styles.statsRow}>
@@ -126,17 +126,17 @@ export default function StudentListScreen() {
           <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: "#4EADFF" }]}>{graded}</Text>
-            <Text style={styles.statLabel}>Graded</Text>
+            <Text style={styles.statLabel}>Dinilai</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: "#FFAA3B" }]}>{pending}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={styles.statLabel}>Belum Dinilai</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: gradeColor(topGrade) }]}>{topGrade ?? "—"}</Text>
-            <Text style={styles.statLabel}>Top Grade</Text>
+            <Text style={styles.statLabel}>Nilai Tertinggi</Text>
           </View>
         </View>
 
@@ -145,7 +145,7 @@ export default function StudentListScreen() {
           <Ionicons name="search-outline" size={16} color="rgba(255,255,255,0.5)" />
           <TextInput
             style={[styles.searchInput, { color: "#fff" }]}
-            placeholder="Search by name or NIM..."
+            placeholder="Cari nama atau NIM..."
             placeholderTextColor="rgba(255,255,255,0.4)"
             value={search}
             onChangeText={setSearch}
@@ -171,7 +171,7 @@ export default function StudentListScreen() {
               <Text style={[styles.tabText, { color: isActive ? colors.primary : colors.textMuted }]}>
                 {tab}
               </Text>
-              {tab === "Pending" && pending > 0 && (
+              {tab === "Belum Dinilai" && pending > 0 && (
                 <View style={[styles.tabBadge, { backgroundColor: colors.warning }]}>
                   <Text style={styles.tabBadgeText}>{pending}</Text>
                 </View>
@@ -186,18 +186,18 @@ export default function StudentListScreen() {
         {filtered.length === 0 && (
           <View style={styles.emptyWrap}>
             <Text style={{ fontSize: 36 }}>🔍</Text>
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>No students found</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>Mahasiswa tidak ditemukan</Text>
           </View>
         )}
 
         {filtered.map((s, i) => {
           const hasGrade = s.grade && s.grade !== "-";
           const gColor   = gradeColor(s.grade);
-          const initials = (s.name || "U").split(" ").map((w) => w[0]).slice(0, 2).join("");
+          const initials = (s.name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("");
 
           return (
             <View
-              key={s.studentId.toString()}
+              key={`${s.studentId?.toString() ?? "unknown"}-${i}`}
               style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
             >
               <Text style={[styles.rank, { color: colors.textMuted }]}>
@@ -217,12 +217,12 @@ export default function StudentListScreen() {
                 {hasGrade ? (
                   <View style={[styles.statusPill, { backgroundColor: `${gColor}18` }]}>
                     <View style={[styles.statusDot, { backgroundColor: gColor }]} />
-                    <Text style={[styles.statusText, { color: gColor }]}>Graded</Text>
+                    <Text style={[styles.statusText, { color: gColor }]}>Dinilai</Text>
                   </View>
                 ) : (
                   <View style={[styles.statusPill, { backgroundColor: `${colors.warning}18` }]}>
                     <View style={[styles.statusDot, { backgroundColor: colors.warning }]} />
-                    <Text style={[styles.statusText, { color: colors.warning }]}>Pending</Text>
+                    <Text style={[styles.statusText, { color: colors.warning }]}>Belum Dinilai</Text>
                   </View>
                 )}
               </View>
@@ -237,12 +237,13 @@ export default function StudentListScreen() {
                 <TouchableOpacity
                   style={[styles.actionBtn, { backgroundColor: hasGrade ? colors.surfaceAlt : colors.primary }]}
                   activeOpacity={0.8}
-                  onPress={() =>
+                  onPress={() => {
+                    if (!s.studentId) return;
                     router.push({
                       pathname: "/(lecturer)/input-grade",
                       params: { studentId: s.studentId.toString(), courseId, studentName: s.name },
-                    })
-                  }
+                    });
+                  }}
                 >
                   <Ionicons
                     name={hasGrade ? "create-outline" : "add"}
@@ -250,7 +251,7 @@ export default function StudentListScreen() {
                     color={hasGrade ? colors.textMuted : "#fff"}
                   />
                   <Text style={[styles.actionText, { color: hasGrade ? colors.textMuted : "#fff" }]}>
-                    {hasGrade ? "Edit" : "Input"}
+                    {hasGrade ? "Ubah" : "Input"}
                   </Text>
                 </TouchableOpacity>
               </View>

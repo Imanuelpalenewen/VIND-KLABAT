@@ -18,6 +18,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ReqStatus = "pending" | "accepted" | "rejected";
 
+const FILTER_OPTIONS: { key: ReqStatus | "all"; label: string }[] = [
+  { key: "all",      label: "Semua"    },
+  { key: "pending",  label: "Menunggu" },
+  { key: "accepted", label: "Diterima" },
+  { key: "rejected", label: "Ditolak"  },
+];
+
 export default function LecturerConsultTab() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -41,16 +48,13 @@ export default function LecturerConsultTab() {
     id: Id<"consultations">,
     action: "accepted" | "rejected",
   ) => {
-    await updateStatus({
-      consultationId: id,
-      status: action,
-    });
+    await updateStatus({ consultationId: id, status: action });
   };
 
   if (consultations === undefined) {
     return (
-      <View style={styles.loading}>
-        <Text>Loading...</Text>
+      <View style={[styles.loading, { backgroundColor: colors.bg }]}>
+        <Text style={{ color: colors.textMuted }}>Memuat...</Text>
       </View>
     );
   }
@@ -59,9 +63,18 @@ export default function LecturerConsultTab() {
 
   const statusColor = (s: ReqStatus) => {
     const map: Record<ReqStatus, string> = {
-      pending: colors.warning,
+      pending:  colors.warning,
       accepted: colors.success,
       rejected: colors.danger,
+    };
+    return map[s];
+  };
+
+  const statusLabel = (s: ReqStatus) => {
+    const map: Record<ReqStatus, string> = {
+      pending:  "Menunggu",
+      accepted: "Diterima",
+      rejected: "Ditolak",
     };
     return map[s];
   };
@@ -72,92 +85,109 @@ export default function LecturerConsultTab() {
       contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
     >
+      {/* ── Header ── */}
       <LinearGradient
         colors={colors.gradients.main}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={[styles.header, { paddingTop: insets.top + 16 }]}
       >
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>Consultation</Text>
+        <View style={styles.heroDeco} />
 
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Konsultasi</Text>
           {pending > 0 && (
-            <View
-              style={[styles.pendingBadge, { backgroundColor: colors.warning }]}
-            >
-              <Text style={styles.pendingText}>{pending} pending</Text>
+            <View style={[styles.pendingBadge, { backgroundColor: colors.warning }]}>
+              <Text style={styles.pendingText}>{pending} menunggu</Text>
             </View>
           )}
         </View>
-
-        <Text style={styles.sub}>Manage student booking requests</Text>
+        <Text style={styles.sub}>Kelola permintaan booking mahasiswa</Text>
       </LinearGradient>
 
-      <View style={styles.filterRow}>
-        {(["all", "pending", "accepted", "rejected"] as const).map((f) => (
-          <TouchableOpacity
-            key={f}
-            onPress={() => setFilter(f)}
-            style={[
-              styles.filterTab,
-              {
-                backgroundColor: filter === f ? colors.primary : colors.border,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: filter === f ? "#fff" : colors.textMuted,
-                fontSize: 11,
-                fontWeight: "700",
-              }}
+      {/* ── Filter Tabs ── */}
+      <View style={[styles.filterRow, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        {FILTER_OPTIONS.map((f) => {
+          const isActive = filter === f.key;
+          return (
+            <TouchableOpacity
+              key={f.key}
+              onPress={() => setFilter(f.key)}
+              style={[
+                styles.filterTab,
+                isActive && [styles.filterTabActive, { borderBottomColor: colors.primary }],
+              ]}
             >
-              {f}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text style={[styles.filterTabText, { color: isActive ? colors.primary : colors.textMuted }]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
+      {/* ── List ── */}
       <View style={styles.list}>
         {consultations.length === 0 ? (
           <EmptyState
             emoji="✅"
-            title="All clear!"
-            subtitle="No requests in this category."
+            title="Semua beres!"
+            subtitle="Tidak ada permintaan di kategori ini."
           />
         ) : (
           consultations.map((r) => (
             <Card key={r._id} style={styles.requestCard}>
-              <View
-                style={[
-                  styles.statusStrip,
-                  { backgroundColor: statusColor(r.status as ReqStatus) },
-                ]}
-              />
+              <View style={[styles.statusStrip, { backgroundColor: statusColor(r.status as ReqStatus) }]} />
 
               <View style={styles.requestInner}>
+                {/* Top row: avatar + name + status pill */}
                 <View style={styles.reqTop}>
-                  <View style={styles.reqAvatar}>
+                  <View style={[styles.reqAvatar, { backgroundColor: `${colors.info}20` }]}>
                     <Text style={{ fontSize: 18 }}>🎓</Text>
                   </View>
-
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.reqName, { color: colors.text }]}>
                       {r.studentName}
                     </Text>
-
                     <Text style={[styles.reqNim, { color: colors.textMuted }]}>
                       {r.nim}
                     </Text>
                   </View>
+                  <View style={[styles.statusPill, { backgroundColor: `${statusColor(r.status as ReqStatus)}18` }]}>
+                    <Text style={[styles.statusPillText, { color: statusColor(r.status as ReqStatus) }]}>
+                      {statusLabel(r.status as ReqStatus)}
+                    </Text>
+                  </View>
                 </View>
 
-                <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                  {r.date} · {r.time}
-                </Text>
+                {/* Info row: waktu + mode */}
+                <View style={[styles.infoRow, { backgroundColor: colors.bg }]}>
+                  <View style={styles.infoItem}>
+                    <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+                    <Text style={[styles.infoText, { color: colors.textMuted }]}>
+                      {r.date} · {r.time}
+                    </Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <Ionicons
+                      name={r.mode === "online" ? "videocam-outline" : "location-outline"}
+                      size={12}
+                      color={colors.textMuted}
+                    />
+                    <Text style={[styles.infoText, { color: colors.textMuted }]}>
+                      {r.mode === "online" ? "Online" : "Tatap Muka"}
+                    </Text>
+                  </View>
+                </View>
 
-                <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                  {r.topic}
-                </Text>
+                {/* Topik */}
+                {r.topic && (
+                  <Text style={[styles.topic, { color: colors.textSub }]}>
+                    📌 {r.topic}
+                  </Text>
+                )}
 
+                {/* Action buttons — hanya tampil jika masih pending */}
                 {r.status === "pending" && (
                   <View style={styles.actionRow}>
                     <TouchableOpacity
@@ -168,15 +198,22 @@ export default function LecturerConsultTab() {
                         colors={colors.gradients.mint}
                         style={styles.acceptBtn}
                       >
-                        <Text style={styles.acceptText}>Accept</Text>
+                        <Ionicons name="checkmark" size={14} color="#fff" />
+                        <Text style={styles.acceptText}>Terima</Text>
                       </LinearGradient>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.rejectBtn, { borderColor: colors.border }]}
+                      style={[
+                        styles.rejectBtn,
+                        { borderColor: colors.border, backgroundColor: colors.backgrounds.card },
+                      ]}
                       onPress={() => respond(r._id, "rejected")}
                     >
-                      <Text style={[styles.rejectText, { color: colors.textMuted }]}>Decline</Text>
+                      <Ionicons name="close" size={14} color={colors.textMuted} />
+                      <Text style={[styles.rejectText, { color: colors.textMuted }]}>
+                        Tolak
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -190,49 +227,166 @@ export default function LecturerConsultTab() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  loading: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { paddingHorizontal: 24, paddingBottom: 32 },
-  titleRow: { flexDirection: "row", gap: 10 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "800" },
-  sub: { color: "rgba(255,255,255,0.6)", fontSize: 13 },
+  scroll: {
+    flex: 1,
+  },
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    overflow: "hidden",
+  },
+  heroDeco: {
+    position: "absolute",
+    top: -40,
+    right: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "rgba(76,59,207,0.3)",
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  title: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "800",
+  },
+  sub: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13,
+    marginTop: 4,
+  },
   pendingBadge: {
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
-  pendingText: { color: "#fff", fontSize: 10, fontWeight: "700" },
-  filterRow: { flexDirection: "row", padding: 16, gap: 6 },
+  pendingText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  filterRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+  },
   filterTab: {
     flex: 1,
-    paddingVertical: 7,
-    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
   },
-  list: { paddingHorizontal: 20 },
-  requestCard: { flexDirection: "row", marginBottom: 12 },
-  statusStrip: { width: 4 },
-  requestInner: { flex: 1, padding: 14 },
-  reqTop: { flexDirection: "row", gap: 10, marginBottom: 6 },
+  filterTabActive: {},
+  filterTabText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  list: {
+    padding: 16,
+  },
+  requestCard: {
+    flexDirection: "row",
+    marginBottom: 12,
+    padding: 0,
+    overflow: "hidden",
+  },
+  statusStrip: {
+    width: 4,
+  },
+  requestInner: {
+    flex: 1,
+    padding: 14,
+    gap: 8,
+  },
+  reqTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   reqAvatar: {
     width: 40,
     height: 40,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#eee",
   },
-  reqName: { fontSize: 14, fontWeight: "700" },
-  reqNim: { fontSize: 11 },
-  actionRow: { flexDirection: "row", gap: 10, marginTop: 10 },
-  acceptBtn: { paddingVertical: 10, borderRadius: 10, alignItems: "center" },
-  acceptText: { color: "#fff", fontWeight: "700" },
-  rejectBtn: {
-    flex: 1,
+  reqName: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  reqNim: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  statusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  infoRow: {
+    flexDirection: "row",
+    gap: 16,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  infoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  infoText: {
+    fontSize: 11,
+  },
+  topic: {
+    fontSize: 12,
+    fontStyle: "italic",
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  acceptBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
+  },
+  acceptText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  rejectBtn: {
+    flex: 1,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
     borderWidth: 1,
   },
-  rejectText: { fontWeight: "700" },
+  rejectText: {
+    fontWeight: "700",
+    fontSize: 13,
+  },
 });
