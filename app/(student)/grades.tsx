@@ -13,7 +13,9 @@
 import useAuth from "@/hooks/useAuth";
 import useTheme from "@/hooks/useTheme";
 import { Card, EmptyState, GradientHeader, StatChip } from "@/components/ui";
-import { getDummyGrades, getDummyCumulativeCredits, getDummyCumulativeGPA } from "./dummyGradeData";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,19 +25,31 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GRADE_COLOR: Record<string, string> = {
-  A:    "#3ECFAE",
+  "A+": "#3ECFAE",
+  "A":  "#3ECFAE",
   "A-": "#5ED8BB",
   "B+": "#4EADFF",
+  "B":  "#4EADFF",
   "B-": "#7EC5FF",
-  P:    "#A8A8B3",
+  "C+": "#FFAA3B",
+  "C":  "#FFAA3B",
+  "D":  "#FF6B8A",
+  "F":  "#FF6B8A",
+  "P":  "#A8A8B3",
 };
 
 const GRADE_POINT_LABEL: Record<string, string> = {
-  A:    "4.00",
+  "A+": "4.00",
+  "A":  "4.00",
   "A-": "3.70",
   "B+": "3.30",
+  "B":  "3.00",
   "B-": "2.70",
-  P:    "—",
+  "C+": "2.30",
+  "C":  "2.00",
+  "D":  "1.00",
+  "F":  "0.00",
+  "P":  "—",
 };
 
 // Semesters available in dummy data
@@ -51,16 +65,24 @@ export default function GradesScreen() {
     Math.min(user?.semester ?? 1, MAX_SEMESTER)
   );
 
-  // ── Dummy data (temporary until Dev 3 grade-input backend is live) ──────────
-  const semesterData = getDummyGrades(user?.nim, user?.email, selectedSemester);
-  const grades = semesterData?.grades ?? [];
-  const semesterGPA = semesterData?.semesterGPA ?? 0;
-  const totalCredits = semesterData?.totalCredits ?? 0;
-  const period = semesterData?.period;
+  // ── Fetch data from Convex ──────────
+  const gradeResult = useQuery(
+    api.grades.getGradesBySemester,
+    user ? { studentId: user._id as Id<"users">, semester: selectedSemester } : "skip"
+  );
 
-  // Cumulative SKS + IPK from Semester 1 up to selectedSemester (non-SKS excluded)
-  const cumulativeCredits = getDummyCumulativeCredits(user?.nim, user?.email, selectedSemester);
-  const cumulativeGPA     = getDummyCumulativeGPA(user?.nim, user?.email, selectedSemester);
+  const cumulativeResult = useQuery(
+    api.grades.calculateCumulativeGPA,
+    user ? { studentId: user._id as Id<"users"> } : "skip"
+  );
+  
+  const grades = gradeResult?.courses ?? [];
+  const semesterGPA = gradeResult?.semesterGPA ?? 0;
+  const totalCredits = gradeResult?.totalCredits ?? 0;
+  const period = "";
+
+  const cumulativeCredits = cumulativeResult?.cumulativeCredits ?? 0;
+  const cumulativeGPA     = cumulativeResult?.cumulativeGPA ?? 0;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -197,11 +219,6 @@ export default function GradesScreen() {
                       <Text style={[styles.tdName, { color: colors.text }]} numberOfLines={2}>
                         {entry.name}
                       </Text>
-                      {entry.lecturerName !== "—" && (
-                        <Text style={[styles.tdLecturer, { color: colors.textMuted }]} numberOfLines={1}>
-                          {entry.lecturerName}
-                        </Text>
-                      )}
                       {isNonCredit && (
                         <View style={[styles.nonCreditBadge, { borderColor: colors.border }]}>
                           <Text style={[styles.nonCreditText, { color: colors.textMuted }]}>
@@ -222,20 +239,20 @@ export default function GradesScreen() {
                         style={[
                           styles.gradeBadge,
                           {
-                            backgroundColor: (GRADE_COLOR[entry.grade] ?? "#A8A8B3") + "22",
-                            borderColor:     (GRADE_COLOR[entry.grade] ?? "#A8A8B3") + "66",
+                            backgroundColor: (GRADE_COLOR[entry.grade ?? "P"] ?? "#A8A8B3") + "22",
+                            borderColor:     (GRADE_COLOR[entry.grade ?? "P"] ?? "#A8A8B3") + "66",
                           },
                         ]}
                       >
-                        <Text style={[styles.gradeText, { color: GRADE_COLOR[entry.grade] ?? colors.textMuted }]}>
-                          {entry.grade}
+                        <Text style={[styles.gradeText, { color: GRADE_COLOR[entry.grade ?? "P"] ?? colors.textMuted }]}>
+                          {entry.grade ?? "—"}
                         </Text>
                       </View>
                     </View>
 
                     {/* Grade point */}
                     <Text style={[styles.tdGp, { color: isNonCredit ? colors.textMuted : colors.textSub }]}>
-                      {GRADE_POINT_LABEL[entry.grade] ?? "—"}
+                      {GRADE_POINT_LABEL[entry.grade ?? "P"] ?? "—"}
                     </Text>
                   </View>
                 );

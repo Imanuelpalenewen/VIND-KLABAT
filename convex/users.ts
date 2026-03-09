@@ -27,6 +27,7 @@ export const login = mutation({
       nim: user.nim,
       program: user.program,
       semester: user.semester,
+      krsSubmitted: user.krsSubmitted,
       nidn: user.nidn,
       department: user.department,
       title: user.title,
@@ -50,6 +51,15 @@ export const getLecturers = query({
       .query("users")
       .withIndex("by_role", (q) => q.eq("role", "lecturer"))
       .collect();
+  },
+});
+
+// ─── submitKRS ──────────────────────────────────────────────────────────────────
+export const submitKRS = mutation({
+  args: { studentId: v.id("users") },
+  handler: async (ctx, { studentId }) => {
+    await ctx.db.patch(studentId, { krsSubmitted: true });
+    return { success: true };
   },
 });
 

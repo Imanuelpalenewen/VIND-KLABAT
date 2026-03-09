@@ -204,7 +204,7 @@ export default function LecturerDashboard() {
                     {c.name}
                   </Text>
                   <Text style={[styles.courseMeta, { color: colors.textMuted }]}>
-                    {c.day?.join(", ")} {c.time} · {c.room}
+                    {Array.isArray(c.day) ? c.day.join(", ") : c.day} {c.time} · {c.room}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -386,13 +386,13 @@ const styles = StyleSheet.create({
   acceptBtnInner: {
     flexDirection: "row", alignItems: "center",
     justifyContent: "center", gap: 6,
-    paddingVertical: 11, borderRadius: 12,
+    paddingVertical: 12, minHeight: 44, borderRadius: 12,
   },
   acceptBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
   rejectBtn: {
     flex: 1, flexDirection: "row", alignItems: "center",
     justifyContent: "center", gap: 6,
-    paddingVertical: 11, borderRadius: 12, borderWidth: 1,
+    paddingVertical: 12, minHeight: 44, borderRadius: 12, borderWidth: 1.5,
   },
   rejectBtnText: { fontSize: 13, fontWeight: "700" },
 });

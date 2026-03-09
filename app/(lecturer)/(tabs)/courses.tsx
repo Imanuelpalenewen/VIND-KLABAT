@@ -112,7 +112,7 @@
                           { color: colors.textMuted },
                         ]}
                       >
-                        {c.day} {c.time}
+                        {Array.isArray(c.day) ? c.day.join(", ") : c.day} {c.time}
                       </Text>
                     </View>
 

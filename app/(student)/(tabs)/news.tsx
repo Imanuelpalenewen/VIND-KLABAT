@@ -105,8 +105,8 @@ const NewsModal = ({
         <ScrollView showsVerticalScrollIndicator={false}>
           <Image
             source={isUri(imgSource) ? imgSource : imgSource}
-            style={styles.modalImage}
-            resizeMode="cover"
+            style={[styles.modalImage, { backgroundColor: isDarkMode ? "#0A0A0A" : "#F8F8F8" }]}
+            resizeMode="contain"
           />
           <View style={styles.modalBody}>
             <View style={styles.modalMeta}>
@@ -161,8 +161,8 @@ const FeaturedCard = ({
     >
       <Image
         source={imgSource}
-        style={styles.featuredImage}
-        resizeMode="cover"
+        style={[styles.featuredImage, { backgroundColor: isDarkMode ? "#0A0A0A" : "#F8F8F8" }]}
+        resizeMode="contain"
       />
       <View style={styles.featuredContent}>
         <View style={styles.featuredMeta}>
@@ -193,7 +193,11 @@ const RecentCard = ({ item, onPress }: { item: any; onPress: () => void }) => {
       onPress={onPress}
       activeOpacity={0.82}
     >
-      <Image source={imgSource} style={styles.recentImage} resizeMode="cover" />
+      <Image 
+        source={imgSource} 
+        style={[styles.recentImage, { backgroundColor: isDarkMode ? "#0A0A0A" : "#F8F8F8" }]} 
+        resizeMode="contain" 
+      />
       <View style={styles.recentContent}>
         <View style={styles.recentMeta}>
           <Badge category={item.category} isDark={isDarkMode} />

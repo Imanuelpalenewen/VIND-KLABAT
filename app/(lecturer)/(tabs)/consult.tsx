@@ -176,7 +176,7 @@ export default function LecturerConsultTab() {
                       style={[styles.rejectBtn, { borderColor: colors.border }]}
                       onPress={() => respond(r._id, "rejected")}
                     >
-                      <Text style={styles.rejectText}>Decline</Text>
+                      <Text style={[styles.rejectText, { color: colors.textMuted }]}>Decline</Text>
                     </TouchableOpacity>
                   </View>
                 )}
