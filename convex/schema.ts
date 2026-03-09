@@ -28,7 +28,7 @@ export default defineSchema({
     name: v.string(),
     credits: v.number(),
     lecturerId: v.id("users"),
-    day: v.string(),          // e.g. "Monday"
+    day: v.array(v.string()),          // e.g. "Monday"
     time: v.string(),         // e.g. "08:00 - 09:40"
     room: v.string(),
     semester: v.number(),
@@ -72,7 +72,7 @@ export default defineSchema({
     status: v.union(
       v.literal("pending"),
       v.literal("accepted"),
-      v.literal("declined")
+      v.literal("rejected")
     ),
   })
     .index("by_student", ["studentId"])

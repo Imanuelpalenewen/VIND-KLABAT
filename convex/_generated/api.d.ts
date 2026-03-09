@@ -10,6 +10,7 @@
 
 import type * as consultations from "../consultations.js";
 import type * as courses from "../courses.js";
+import type * as enrollment from "../enrollment.js";
 import type * as grades from "../grades.js";
 import type * as news from "../news.js";
 import type * as seed from "../seed.js";
@@ -24,6 +25,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   consultations: typeof consultations;
   courses: typeof courses;
+  enrollment: typeof enrollment;
   grades: typeof grades;
   news: typeof news;
   seed: typeof seed;

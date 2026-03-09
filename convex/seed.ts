@@ -4,7 +4,14 @@ export const seedAll = mutation({
   args: {},
   handler: async (ctx) => {
     // ── CLEAR EXISTING DATA ───────────────────────────────────────────────
-    for (const table of ["grades", "enrollments", "consultations", "news", "courses", "users"] as const) {
+    for (const table of [
+      "grades",
+      "enrollments",
+      "consultations",
+      "news",
+      "courses",
+      "users",
+    ] as const) {
       const rows = await ctx.db.query(table).collect();
       await Promise.all(rows.map((r) => ctx.db.delete(r._id)));
     }
@@ -83,7 +90,7 @@ export const seedAll = mutation({
       name: "Mobile App Development",
       credits: 3,
       lecturerId: lec1,
-      day: "Monday",
+      day: ["Monday"],
       time: "08:00 - 09:40",
       room: "Lab 3",
       semester: 6,
@@ -94,7 +101,7 @@ export const seedAll = mutation({
       name: "Artificial Intelligence",
       credits: 3,
       lecturerId: lec2,
-      day: "Tuesday",
+      day: ["Tuesday"],
       time: "10:00 - 11:40",
       room: "R.305",
       semester: 6,
@@ -105,7 +112,7 @@ export const seedAll = mutation({
       name: "Software Engineering",
       credits: 3,
       lecturerId: lec3,
-      day: "Wednesday",
+      day: ["Wednesday"],
       time: "08:00 - 09:40",
       room: "R.201",
       semester: 6,
@@ -116,7 +123,7 @@ export const seedAll = mutation({
       name: "Database Systems",
       credits: 3,
       lecturerId: lec1,
-      day: "Thursday",
+      day: ["Thursday"],
       time: "13:00 - 14:40",
       room: "Lab 2",
       semester: 3,
@@ -127,7 +134,7 @@ export const seedAll = mutation({
       name: "Data Structures",
       credits: 3,
       lecturerId: lec2,
-      day: "Monday",
+      day: ["Monday"],
       time: "10:00 - 11:40",
       room: "R.102",
       semester: 2,
@@ -138,7 +145,7 @@ export const seedAll = mutation({
       name: "Computer Networks",
       credits: 3,
       lecturerId: lec3,
-      day: "Friday",
+      day: ["Friday"],
       time: "08:00 - 09:40",
       room: "Lab 1",
       semester: 4,
@@ -177,15 +184,87 @@ export const seedAll = mutation({
 
     // ── GRADES (previous semester examples) ──────────────────────────────
     const gradeData = [
-      { studentId: stu1, courseId: cs1, semester: 5, grade: "A", gradePoint: 4.0, midterm: 90, final: 92 },
-      { studentId: stu1, courseId: cs2, semester: 5, grade: "B+", gradePoint: 3.5, midterm: 82, final: 85 },
-      { studentId: stu1, courseId: cs3, semester: 5, grade: "A", gradePoint: 4.0, midterm: 88, final: 91 },
-      { studentId: stu1, courseId: cs4, semester: 5, grade: "B", gradePoint: 3.0, midterm: 75, final: 78 },
-      { studentId: stu2, courseId: cs1, semester: 5, grade: "B+", gradePoint: 3.5, midterm: 80, final: 84 },
-      { studentId: stu2, courseId: cs2, semester: 5, grade: "A", gradePoint: 4.0, midterm: 91, final: 93 },
-      { studentId: stu2, courseId: cs3, semester: 5, grade: "B", gradePoint: 3.0, midterm: 74, final: 77 },
-      { studentId: stu3, courseId: cs5, semester: 3, grade: "A", gradePoint: 4.0, midterm: 95, final: 94 },
-      { studentId: stu3, courseId: cs6, semester: 3, grade: "B+", gradePoint: 3.5, midterm: 83, final: 86 },
+      {
+        studentId: stu1,
+        courseId: cs1,
+        semester: 5,
+        grade: "A",
+        gradePoint: 4.0,
+        midterm: 90,
+        final: 92,
+      },
+      {
+        studentId: stu1,
+        courseId: cs2,
+        semester: 5,
+        grade: "B+",
+        gradePoint: 3.5,
+        midterm: 82,
+        final: 85,
+      },
+      {
+        studentId: stu1,
+        courseId: cs3,
+        semester: 5,
+        grade: "A",
+        gradePoint: 4.0,
+        midterm: 88,
+        final: 91,
+      },
+      {
+        studentId: stu1,
+        courseId: cs4,
+        semester: 5,
+        grade: "B",
+        gradePoint: 3.0,
+        midterm: 75,
+        final: 78,
+      },
+      {
+        studentId: stu2,
+        courseId: cs1,
+        semester: 5,
+        grade: "B+",
+        gradePoint: 3.5,
+        midterm: 80,
+        final: 84,
+      },
+      {
+        studentId: stu2,
+        courseId: cs2,
+        semester: 5,
+        grade: "A",
+        gradePoint: 4.0,
+        midterm: 91,
+        final: 93,
+      },
+      {
+        studentId: stu2,
+        courseId: cs3,
+        semester: 5,
+        grade: "B",
+        gradePoint: 3.0,
+        midterm: 74,
+        final: 77,
+      },
+      {
+        studentId: stu3,
+        courseId: cs5,
+        semester: 3,
+        grade: "A",
+        gradePoint: 4.0,
+        midterm: 95,
+        final: 94,
+      },
+      {
+        studentId: stu3,
+        courseId: cs6,
+        semester: 3,
+        grade: "B+",
+        gradePoint: 3.5,
+        midterm: 83,
+        final: 86,
+      },
     ];
 
     for (const g of gradeData) {
@@ -226,4 +305,3 @@ export const seedAll = mutation({
     return { success: true, message: "Seed data created successfully" };
   },
 });
-
