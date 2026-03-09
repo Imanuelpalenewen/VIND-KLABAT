@@ -1,17 +1,17 @@
 import useAuth from "@/hooks/useAuth";
 import useTheme from "@/hooks/useTheme";
-import { Card, Divider } from "@/components/ui";
+import { Card, Divider, PrimaryButton } from "@/components/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   Alert,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useState } from "react";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -70,13 +70,16 @@ export default function ProfileScreen() {
 
   const isStudent = user?.role === "student";
 
+  const [signingOut, setSigningOut] = useState(false);
+
   const handleLogout = () =>
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert("Keluar", "Apakah Anda yakin ingin keluar?", [
+      { text: "Batal", style: "cancel" },
       {
-        text: "Sign Out",
+        text: "Keluar",
         style: "destructive",
         onPress: async () => {
+          setSigningOut(true);
           await logout();
           router.replace("/(auth)/login");
         },
@@ -184,10 +187,10 @@ export default function ProfileScreen() {
       {/* ── CV Body ── */}
       <View style={styles.body}>
 
-        {/* ── Identity ── */}
-        <CVSection icon="person-outline" title="Identity">
+        {/* ── Identitas ── */}
+        <CVSection icon="person-outline" title="Identitas">
           <Card padding={0} style={styles.cvCard}>
-            <CVRow label="Full Name"  value={user?.name ?? "—"} />
+            <CVRow label="Nama Lengkap"  value={user?.name ?? "—"} />
             <Divider />
             {isStudent ? (
               <>
@@ -201,46 +204,60 @@ export default function ProfileScreen() {
               <>
                 <CVRow label="NIDN"       value={user?.nidn ?? "—"} />
                 <Divider />
-                <CVRow label="Department" value={user?.department ?? "—"} />
+                <CVRow label="Departemen" value={user?.department ?? "—"} />
                 <Divider />
-                <CVRow label="Position"   value={user?.title ?? "—"} valueColor={colors.success} />
+                <CVRow label="Jabatan"   value={user?.title ?? "—"} valueColor={colors.success} />
               </>
             )}
             <Divider />
-            <CVRow label="Academic Year" value="2024 / 2025" />
+            <CVRow label="Tahun Akademik" value="2024 / 2025" />
             <Divider />
-            <CVRow label="Campus"        value="Universitas Klabat, Airmadidi" />
+            <CVRow label="Kampus"        value="Universitas Klabat, Airmadidi" />
             <Divider />
-            <CVRow label="Phone"         value="+62 812-0000-0000" />
+            <CVRow label="Telepon"         value="+62 812-0000-0000" />
             <Divider />
             <CVRow label="Email"         value={user?.email ?? "—"} />
           </Card>
         </CVSection>
 
-        {/* ── Settings ── */}
-        <CVSection icon="settings-outline" title="Settings">
-          <Card padding={16} style={styles.cvCard}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={[{ fontSize: 13, fontWeight: "500", color: colors.text }]}>Dark Mode</Text>
-              <Switch
-                value={isDarkMode}
-                onValueChange={toggleDarkMode}
-                trackColor={{ false: colors.border, true: `${colors.primary}88` }}
-                thumbColor={isDarkMode ? colors.primary : colors.surface}
-              />
+        {/* ── Pengaturan ── */}
+        <CVSection icon="settings-outline" title="Pengaturan">
+          <Card padding={0} style={styles.cvCard}>
+            <View style={styles.cvRow}>
+              <Text style={[styles.cvRowLabel, { color: colors.textMuted }]}>Dark Mode</Text>
+              <TouchableOpacity
+                onPress={toggleDarkMode}
+                activeOpacity={0.8}
+                style={[
+                  styles.toggleTrack,
+                  { backgroundColor: isDarkMode ? colors.primary : colors.border },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.toggleThumb,
+                    { transform: [{ translateX: isDarkMode ? 22 : 2 }] },
+                  ]}
+                >
+                  <Ionicons
+                    name={isDarkMode ? "moon" : "sunny"}
+                    size={11}
+                    color={isDarkMode ? colors.primary : colors.warning}
+                  />
+                </View>
+              </TouchableOpacity>
             </View>
           </Card>
         </CVSection>
 
         {/* ── Logout ── */}
-        <TouchableOpacity
+        <PrimaryButton
+          label={signingOut ? "Signing out..." : "Sign Out"}
           onPress={handleLogout}
-          activeOpacity={0.8}
-          style={[styles.logoutBtn, { borderColor: colors.danger }]}
-        >
-          <Ionicons name="log-out-outline" size={18} color={colors.danger} />
-          <Text style={[styles.logoutText, { color: colors.danger }]}>Sign Out</Text>
-        </TouchableOpacity>
+          loading={signingOut}
+          variant="outline"
+          style={styles.logoutBtn}
+        />
 
         {/* ── Footer ── */}
         <View style={styles.footer}>
@@ -368,13 +385,25 @@ const styles = StyleSheet.create({
   cvRowLabel: { fontSize: 12, fontWeight: "500", flexShrink: 0 },
   cvRowValue: { fontSize: 13, fontWeight: "700", textAlign: "right", flex: 1 },
 
+  // Toggle
+  toggleTrack: {
+    width: 46, height: 26, borderRadius: 13,
+    justifyContent: "center",
+  },
+  toggleThumb: {
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: "#fff",
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2, shadowRadius: 3, elevation: 3,
+  },
+
   // Logout
   logoutBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 10, paddingVertical: 14, borderRadius: 16,
-    borderWidth: 1.5, marginBottom: 24,
+    marginTop: 8,
+    marginBottom: 24,
   },
-  logoutText: { fontSize: 15, fontWeight: "700" },
 
   // Footer
   footer:         { alignItems: "center", paddingVertical: 32, gap: 6 },

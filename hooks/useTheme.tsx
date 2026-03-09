@@ -1,5 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Animated } from "react-native";
 
 export interface ColorScheme {
   // Base
@@ -119,6 +127,8 @@ interface ThemeContextType {
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   colors: ColorScheme;
+  // Animated value 0 = light, 1 = dark — bisa dipakai komponen lain
+  themeAnim: Animated.Value;
 }
 
 const ThemeContext = createContext<undefined | ThemeContextType>(undefined);
@@ -126,9 +136,17 @@ const ThemeContext = createContext<undefined | ThemeContextType>(undefined);
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  // Animated value: 0 = light, 1 = dark
+  const themeAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     AsyncStorage.getItem("darkMode").then((value) => {
-      if (value) setIsDarkMode(JSON.parse(value));
+      if (value) {
+        const parsed = JSON.parse(value) as boolean;
+        setIsDarkMode(parsed);
+        // Set langsung tanpa animasi saat pertama load
+        themeAnim.setValue(parsed ? 1 : 0);
+      }
     });
   }, []);
 
@@ -136,12 +154,19 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
     await AsyncStorage.setItem("darkMode", JSON.stringify(newMode));
+
+    // Smooth fade transition 300ms
+    Animated.timing(themeAnim, {
+      toValue: newMode ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
   };
 
   const colors = isDarkMode ? darkColors : lightColors;
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode, colors }}>
+    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode, colors, themeAnim }}>
       {children}
     </ThemeContext.Provider>
   );
