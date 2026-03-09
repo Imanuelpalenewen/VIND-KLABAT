@@ -20,15 +20,16 @@ import { Id } from "@/convex/_generated/dataModel";
 
 // ─── Grade options ────────────────────────────────────────────────────────────
 const GRADE_OPTIONS = [
+  { label: "A+", point: 4.0, color: "#3ECFAE" },
   { label: "A",  point: 4.0, color: "#3ECFAE" },
-  { label: "A-", point: 3.7, color: "#3ECFAE" },
+  { label: "A-", point: 3.7, color: "#5ED8BB" },
   { label: "B+", point: 3.3, color: "#4EADFF" },
   { label: "B",  point: 3.0, color: "#4EADFF" },
-  { label: "B-", point: 2.7, color: "#FFAA3B" },
+  { label: "B-", point: 2.7, color: "#7EC5FF" },
   { label: "C+", point: 2.3, color: "#FFAA3B" },
-  { label: "C",  point: 2.0, color: "#FF6B8A" },
+  { label: "C",  point: 2.0, color: "#FFAA3B" },
   { label: "D",  point: 1.0, color: "#FF6B8A" },
-  { label: "E",  point: 0.0, color: "#8B92B8" },
+  { label: "F",  point: 0.0, color: "#FF6B8A" },
 ];
 
 // ─── Score Input ──────────────────────────────────────────────────────────────
@@ -106,15 +107,16 @@ export default function InputGradeScreen() {
 
   const autoGrade = (score: number | null) => {
     if (score === null) return null;
-    if (score >= 85) return "A";
-    if (score >= 80) return "A-";
-    if (score >= 75) return "B+";
-    if (score >= 70) return "B";
-    if (score >= 65) return "B-";
-    if (score >= 60) return "C+";
-    if (score >= 55) return "C";
-    if (score >= 40) return "D";
-    return "E";
+    if (score >= 97) return "A+";
+    if (score >= 93) return "A";
+    if (score >= 90) return "A-";
+    if (score >= 87) return "B+";
+    if (score >= 83) return "B";
+    if (score >= 80) return "B-";
+    if (score >= 77) return "C+";
+    if (score >= 70) return "C";
+    if (score >= 60) return "D";
+    return "F";
   };
 
   // Use manual selection if set, otherwise auto
@@ -239,6 +241,23 @@ export default function InputGradeScreen() {
                 <Text style={[styles.weightLabel, { color: colors.textMuted }]}>{w.label}</Text>
               </View>
             ))}
+          </View>
+        </Card>
+
+        {/* ── Grade Scale Reference ── */}
+        <Card style={{ marginBottom: 24 }} padding={16}>
+          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 8 }]}>Grade Scale</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>A+ : 97 – 100</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>A : 93 – 96</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>A- : 90 – 92</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>B+ : 87 – 89</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>B : 83 – 86</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>B- : 80 – 82</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>C+ : 77 – 79</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>C : 70 – 76</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>D : 60 – 69</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>F : 0 – 59</Text>
           </View>
         </Card>
 

@@ -93,9 +93,6 @@ export const bookConsultation = mutation({
     return { success: true };
   },
 });
-import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
-
 // ─── Lecturer get consultations ─────────────────────
 export const getLecturerConsultations = query({
   args: {

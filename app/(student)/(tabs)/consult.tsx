@@ -112,6 +112,10 @@ const ChooseLecturer = ({
   colors: any;
 }) => {
   const lecturers = useQuery(api.consultations.getLecturers);
+  const { user } = useAuth();
+  const myConsultations = useQuery(api.consultations.getMyConsultations, 
+    user ? { studentId: user._id as Id<"users"> } : "skip"
+  );
 
   if (!lecturers) {
     return (
@@ -133,28 +137,33 @@ const ChooseLecturer = ({
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
         Choose Lecturer
       </Text>
-      {lecturers.map((l) => (
-        <TouchableOpacity
-          key={l._id}
-          style={[styles.card, { backgroundColor: colors.backgrounds.card }]}
-          onPress={() => onSelect(l)}
-          activeOpacity={0.72}
-        >
-          <Avatar name={l.name} colors={colors} />
-          <View style={styles.cardInfo}>
-            <Text style={[styles.cardName, { color: colors.text }]}>
-              {l.name}
+      {lecturers.map((l) => {
+        const isBooked = myConsultations?.some(
+          (c) => c.lecturerName === l.name && (c.status === "pending" || c.status === "accepted")
+        );
+        return (
+          <TouchableOpacity
+            key={l._id}
+            style={[styles.card, { backgroundColor: colors.backgrounds.card }, isBooked && { opacity: 0.5 }]}
+            onPress={() => !isBooked && onSelect(l)}
+            activeOpacity={isBooked ? 1 : 0.72}
+          >
+            <Avatar name={l.name} colors={colors} />
+            <View style={styles.cardInfo}>
+              <Text style={[styles.cardName, { color: colors.text }]}>
+                {l.name}
+              </Text>
+              <Text style={[styles.cardSub, { color: colors.textMuted }]}>
+                {l.title ? `${l.title} · ` : ""}
+                {l.department}
+              </Text>
+            </View>
+            <Text style={[styles.statusBadge, { color: isBooked ? colors.warning : colors.success }]}>
+              {isBooked ? "Already Booked" : "Available"}
             </Text>
-            <Text style={[styles.cardSub, { color: colors.textMuted }]}>
-              {l.title ? `${l.title} · ` : ""}
-              {l.department}
-            </Text>
-          </View>
-          <Text style={[styles.statusBadge, { color: colors.success }]}>
-            Available
-          </Text>
-        </TouchableOpacity>
-      ))}
+          </TouchableOpacity>
+        );
+      })}
     </ScrollView>
   );
 };
@@ -220,36 +229,38 @@ const PickDateTime = ({
           </Text>
           <View style={styles.calendarGrid}>
             {DAYS.map((d, i) => (
-              <Text
-                key={i}
-                style={[styles.calendarDayLabel, { color: colors.textMuted }]}
-              >
-                {d}
-              </Text>
+              <View key={i} style={styles.calendarDayCell}>
+                <Text
+                  style={[styles.calendarDayLabel, { color: colors.textMuted }]}
+                >
+                  {d}
+                </Text>
+              </View>
             ))}
             {CALENDAR_CELLS.map((day, i) => (
-              <TouchableOpacity
-                key={i}
-                style={[
-                  styles.calendarCell,
-                  day === selectedDay && styles.calendarCellSelected,
-                ]}
-                onPress={() => {
-                  if (day) setSelectedDay(day);
-                }}
-                disabled={!day}
-              >
-                <Text
+              <View key={i} style={styles.calendarCell}>
+                <TouchableOpacity
                   style={[
-                    styles.calendarCellText,
-                    { color: colors.text },
-                    day === selectedDay && styles.calendarCellTextSelected,
-                    !day && { opacity: 0 },
+                    styles.calendarDayButton,
+                    day === selectedDay && styles.calendarCellSelected,
                   ]}
+                  onPress={() => {
+                    if (day) setSelectedDay(day);
+                  }}
+                  disabled={!day}
                 >
-                  {day ?? ""}
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      styles.calendarCellText,
+                      { color: colors.text },
+                      day === selectedDay && styles.calendarCellTextSelected,
+                      !day && { opacity: 0 },
+                    ]}
+                  >
+                    {day ?? ""}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             ))}
           </View>
         </View>
@@ -729,23 +740,34 @@ const styles = StyleSheet.create({
   },
   calendarMonth: { fontSize: 14, fontWeight: "800", marginBottom: 12 },
   calendarGrid: { flexDirection: "row", flexWrap: "wrap" },
-  calendarDayLabel: {
+  calendarDayCell: {
     width: `${100 / 7}%`,
-    textAlign: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 6,
+  },
+  calendarDayLabel: {
     fontSize: 11,
     fontWeight: "600",
-    paddingBottom: 8,
+    textAlign: "center",
   },
   calendarCell: {
     width: `${100 / 7}%`,
     aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 100,
+    paddingVertical: 2,
+  },
+  calendarDayButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
   calendarCellSelected: { backgroundColor: "#4C3BCF" },
-  calendarCellText: { fontSize: 13, fontWeight: "500" },
-  calendarCellTextSelected: { color: "#fff", fontWeight: "800" },
+  calendarCellText: { fontSize: 14, fontWeight: "500" },
+  calendarCellTextSelected: { color: "#fff", fontWeight: "700" },
 
   // Time slots
   timeGrid: {

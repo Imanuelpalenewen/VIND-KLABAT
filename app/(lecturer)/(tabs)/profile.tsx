@@ -7,6 +7,7 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -63,7 +64,7 @@ function CVRow({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
-  const { colors } = useTheme();
+  const { colors, isDarkMode, toggleDarkMode } = useTheme();
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -216,6 +217,20 @@ export default function ProfileScreen() {
           </Card>
         </CVSection>
 
+        {/* ── Settings ── */}
+        <CVSection icon="settings-outline" title="Settings">
+          <Card padding={16} style={styles.cvCard}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={[{ fontSize: 13, fontWeight: "500", color: colors.text }]}>Dark Mode</Text>
+              <Switch
+                value={isDarkMode}
+                onValueChange={toggleDarkMode}
+                trackColor={{ false: colors.border, true: `${colors.primary}88` }}
+                thumbColor={isDarkMode ? colors.primary : colors.surface}
+              />
+            </View>
+          </Card>
+        </CVSection>
 
         {/* ── Logout ── */}
         <TouchableOpacity

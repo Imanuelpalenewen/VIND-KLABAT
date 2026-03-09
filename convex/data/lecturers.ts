@@ -1,0 +1,32 @@
+export const LECTURERS = [
+  {
+    username: "0001111111",
+    email: "arghasilitonga@unklab.ac.id",
+    password: "321",
+    role: "lecturer" as const,
+    name: "Argha Silitonga",
+    nidn: "0001111111",
+    department: "Informatika",
+    title: "Dosen Tetap",
+  },
+  {
+    username: "0002222222",
+    email: "marcheltombeng@unklab.ac.id",
+    password: "321",
+    role: "lecturer" as const,
+    name: "Marchel Tombeng",
+    nidn: "0002222222",
+    department: "Teknologi Informasi",
+    title: "Dosen Tetap",
+  },
+  {
+    username: "0003333333",
+    email: "semmytaju@unklab.ac.id",
+    password: "321",
+    role: "lecturer" as const,
+    name: "Semmy Taju",
+    nidn: "0003333333",
+    department: "Informatika",
+    title: "Dosen Tetap",
+  },
+];

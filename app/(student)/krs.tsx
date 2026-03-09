@@ -18,20 +18,23 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const CURRENT_SEMESTER = 6;
-const MAX_CREDITS = 24;
+const MAX_CREDITS = 23;
 
 // ─── Stat Box ────────────────────────────────────────────────────────────────
 const StatBox = ({
   value,
   label,
   valueColor,
+  subtitle,
 }: {
-  value: number;
+  value: number | string;
   label: string;
   valueColor: string;
+  subtitle?: string;
 }) => (
   <View style={styles.statBox}>
     <Text style={[styles.statValue, { color: valueColor }]}>{value}</Text>
+    {subtitle && <Text style={[styles.statSubtitle, { color: valueColor }]}>{subtitle}</Text>}
     <Text style={styles.statLabel}>{label}</Text>
   </View>
 );
@@ -149,6 +152,10 @@ export default function KRSScreen() {
   // ── Convex mutations ──
   const enrollCourse = useMutation(api.courses.enrollCourse);
   const dropCourse = useMutation(api.courses.dropCourse);
+  const submitKRS = useMutation(api.users.submitKRS);
+
+  const userRecord = useQuery(api.users.getUser, studentId ? { userId: studentId } : "skip");
+  const isSubmitted = userRecord === undefined ? false : (userRecord?.krsSubmitted ?? false);
 
   const enrolledIds = new Set(enrollments?.map((e) => e._id.toString()) ?? []);
 
@@ -192,13 +199,18 @@ export default function KRSScreen() {
   const handleSubmit = () => {
     Alert.alert(
       "Konfirmasi Registrasi",
-      `Anda akan mendaftarkan ${enrolledCount} mata kuliah dengan total ${totalCredits} SKS. Lanjutkan?`,
+      `Anda akan mendaftarkan ${enrolledCount} mata kuliah dengan total ${totalCredits} SKS. Setelah di-submit, KRS tidak dapat diubah lagi. Lanjutkan?`,
       [
         { text: "Batal", style: "cancel" },
         {
           text: "Submit",
           style: "default",
-          onPress: () => Alert.alert("Sukses", "Registrasi KRS berhasil!"),
+          onPress: async () => {
+            if (studentId) {
+              await submitKRS({ studentId });
+              Alert.alert("Sukses", "Registrasi KRS berhasil!");
+            }
+          },
         },
       ],
     );
@@ -226,7 +238,7 @@ export default function KRSScreen() {
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* ── HEADER ── */}
       <GradientHeader
-        title="Course Registration"
+        title={isSubmitted ? "Approved Registration" : "Course Registration"}
         subtitle={`KRS — Semester ${CURRENT_SEMESTER}`}
       />
 
@@ -236,26 +248,51 @@ export default function KRSScreen() {
       >
         <StatBox
           value={enrolledCount}
-          label="SELECTED"
+          label={isSubmitted ? "APPROVED" : "COURSES"}
           valueColor={colors.primary}
         />
         <View
           style={[styles.statDivider, { backgroundColor: colors.divider }]}
         />
+        {/* Credit counter: show as "18 / 23" */}
         <StatBox
           value={totalCredits}
-          label="CREDITS"
-          valueColor={colors.info}
+          subtitle={`/ ${MAX_CREDITS}`}
+          label="SELECTED SKS"
+          valueColor={
+            totalCredits >= MAX_CREDITS
+              ? colors.danger
+              : totalCredits >= MAX_CREDITS - 3
+              ? colors.warning
+              : colors.info
+          }
         />
         <View
           style={[styles.statDivider, { backgroundColor: colors.divider }]}
         />
         <StatBox
           value={MAX_CREDITS}
-          label="MAX CREDITS"
+          label="MAX SKS"
           valueColor={colors.warning}
         />
       </View>
+
+      {/* ── SKS Limit Warning ── */}
+      {!isSubmitted && totalCredits >= MAX_CREDITS && (
+        <View style={[styles.warningBanner, { backgroundColor: `${colors.danger}18`, borderColor: `${colors.danger}55` }]}>
+          <Text style={[styles.warningText, { color: colors.danger }]}>
+            ⚠️  SKS limit reached ({MAX_CREDITS}/{MAX_CREDITS}). Deselect a course to add another.
+          </Text>
+        </View>
+      )}
+      {!isSubmitted && totalCredits > 0 && totalCredits < MAX_CREDITS && (
+        <View style={[styles.sksBanner, { backgroundColor: colors.backgrounds.card }]}>
+          <Text style={[styles.sksProgressLabel, { color: colors.textMuted }]}>Selected SKS:</Text>
+          <Text style={[styles.sksProgressValue, { color: colors.primary }]}>
+            {totalCredits} / {MAX_CREDITS}
+          </Text>
+        </View>
+      )}
 
       {/* ── COURSE LIST ── */}
       <ScrollView
@@ -273,22 +310,28 @@ export default function KRSScreen() {
             </Text>
           </View>
         ) : (
-          courses.map((course) => (
-            <CourseCard
-              key={course._id.toString()}
-              course={course}
-              enrolled={enrolledIds.has(course._id.toString())}
-              loading={loadingId === course._id.toString()}
-              onToggle={() =>
-                handleToggle(course._id, enrolledIds.has(course._id.toString()))
-              }
-            />
-          ))
+          courses
+            .filter((course) => (isSubmitted ? enrolledIds.has(course._id.toString()) : true))
+            .map((course) => (
+              <CourseCard
+                key={course._id.toString()}
+                course={course}
+                enrolled={enrolledIds.has(course._id.toString())}
+                loading={loadingId === course._id.toString()}
+                onToggle={() => {
+                  if (isSubmitted) {
+                    Alert.alert("Terkunci", "Anda sudah submit KRS semester ini.");
+                    return;
+                  }
+                  handleToggle(course._id, enrolledIds.has(course._id.toString()));
+                }}
+              />
+            ))
         )}
       </ScrollView>
 
       {/* ── SUBMIT BUTTON ── */}
-      {enrolledCount > 0 && (
+      {!isSubmitted && enrolledCount > 0 && (
         <View
           style={[
             styles.submitWrapper,
@@ -335,6 +378,7 @@ const styles = StyleSheet.create({
   },
   statBox: { flex: 1, alignItems: "center" },
   statValue: { fontSize: 22, fontWeight: "900", lineHeight: 26 },
+  statSubtitle: { fontSize: 14, fontWeight: "700", marginTop: -2 },
   statLabel: {
     fontSize: 9,
     fontWeight: "700",
@@ -343,6 +387,33 @@ const styles = StyleSheet.create({
     color: "#8B92B8",
   },
   statDivider: { width: 1, height: 32 },
+
+  // SKS banner
+  sksBanner: {
+    marginHorizontal: 16,
+    marginBottom: 4,
+    marginTop: 4,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  sksProgressLabel: { fontSize: 13, fontWeight: "600" },
+  sksProgressValue: { fontSize: 16, fontWeight: "800" },
+
+  // Warning banner
+  warningBanner: {
+    marginHorizontal: 16,
+    marginBottom: 4,
+    marginTop: 4,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+  },
+  warningText: { fontSize: 13, fontWeight: "600" },
 
   // Scroll
   scroll: { flex: 1 },

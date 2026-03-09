@@ -1,4 +1,4 @@
-import { query } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 // ─── getGradesBySemester (Dev 1 — feat/noel-grades) ─────────────────────────
@@ -37,21 +37,71 @@ export const getGradesBySemester = query({
     const semesterGPA =
       totalCredits > 0 ? Math.round((weightedSum / totalCredits) * 100) / 100 : null;
 
-    return { courses, semesterGPA, totalCredits };
+    // Calculate Cumulative GPA up to this semester
+    const allGrades = await ctx.db
+      .query("grades")
+      .withIndex("by_student_semester", (q) => q.eq("studentId", studentId))
+      .collect();
+
+    const pastGrades = allGrades.filter(g => g.semester <= semester && g.gradePoint != null);
+    
+    let cumulativeCredits = 0;
+    let cumulativeWeightedSum = 0;
+
+    await Promise.all(
+      pastGrades.map(async (g) => {
+        const course = await ctx.db.get(g.courseId);
+        if (course) {
+          cumulativeCredits += course.credits;
+          cumulativeWeightedSum += course.credits * (g.gradePoint ?? 0);
+        }
+      })
+    );
+
+    const cumulativeGPA =
+      cumulativeCredits > 0 ? Math.round((cumulativeWeightedSum / cumulativeCredits) * 100) / 100 : null;
+
+    return { courses, semesterGPA, totalCredits, cumulativeGPA, cumulativeCredits };
   },
 });
 
-// TODO: getStudentsByCourse   (query, Dev 3 — student-list)
-//   args: { courseId: v.id("courses") }
-//   - Return semua mahasiswa enrolled beserta nilai mereka
+// ─── calculateCumulativeGPA ───────────────────────────────────────────────
+export const calculateCumulativeGPA = query({
+  args: { studentId: v.id("users") },
+  handler: async (ctx, { studentId }) => {
+    const allGrades = await ctx.db
+      .query("grades")
+      .withIndex("by_student_semester", (q) => q.eq("studentId", studentId))
+      .collect();
 
-// TODO: upsertGrade           (mutation, Dev 3 — input/update nilai)
-//   args: { studentId: v.id("users"), courseId: v.id("courses"), semester: v.number(),
-//           letterGrade: v.string(), gradePoint: v.number() }
-//   - Gunakan patch jika sudah ada, insert jika belum
+    const pastGrades = allGrades.filter((g) => g.gradePoint != null);
 
-import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+    let cumulativeCredits = 0;
+    let cumulativeWeightedSum = 0;
+
+    await Promise.all(
+      pastGrades.map(async (g) => {
+        const course = await ctx.db.get(g.courseId);
+        if (course) {
+          cumulativeCredits += course.credits;
+          cumulativeWeightedSum += course.credits * (g.gradePoint ?? 0);
+        }
+      })
+    );
+
+    const cumulativeGPA =
+      cumulativeCredits > 0
+        ? Math.round((cumulativeWeightedSum / cumulativeCredits) * 100) / 100
+        : 0;
+
+    return { cumulativeGPA, cumulativeCredits };
+  },
+});
+
+/**
+ * Retrieves the list of students enrolled in a particular course along with their grades.
+ * Used in the lecturer's Student List page.
+ */
 
 export const getStudentsByCourse = query({
   args: {

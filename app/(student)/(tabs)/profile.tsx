@@ -4,6 +4,7 @@ import { Card, GradientHeader, PrimaryButton } from "@/components/ui";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Switch,
@@ -11,6 +12,9 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 
 function Initials({ name, size = 64 }: { name: string; size?: number }) {
   const { colors } = useTheme();
@@ -46,16 +50,36 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const [signingOut, setSigningOut] = useState(false);
 
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    await logout();
-    router.replace("/(auth)/login" as any);
+  const handleSignOut = () => {
+    Alert.alert(
+      "Confirm Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Sign Out", 
+          style: "destructive",
+          onPress: async () => {
+            setSigningOut(true);
+            await logout();
+            router.replace("/(auth)/login" as any);
+          }
+        }
+      ]
+    );
   };
 
   const displayName = user?.name ?? "Student";
   const nim        = user?.nim ?? "—";
   const program    = user?.program ?? "—";
   const semester   = user?.semester != null ? `Semester ${user.semester}` : "—";
+
+  const gradeResult = useQuery(
+    api.grades.calculateCumulativeGPA,
+    user ? { studentId: user._id as Id<"users"> } : "skip"
+  );
+  const totalSKS = gradeResult?.cumulativeCredits ?? 0;
+  const gpa = gradeResult?.cumulativeGPA ?? 0;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -81,6 +105,19 @@ export default function ProfileScreen() {
             <DetailItem label="NIM" value={nim} colors={colors} />
             <DetailItem label="Program" value={program} colors={colors} />
             <DetailItem label="Status" value={semester} colors={colors} />
+          </View>
+          
+          <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+          
+          <View style={styles.detailRow}>
+            <DetailItem label="Total SKS" value={`${totalSKS} SKS`} colors={colors} />
+            <DetailItem label="GPA (IPK)" value={gpa > 0 ? gpa.toFixed(2) : "—"} colors={colors} />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+
+          <View style={styles.detailRow}>
+             <DetailItem label="Academic Advisor" value="Dr. Ronald Maramis" colors={colors} />
           </View>
         </Card>
 

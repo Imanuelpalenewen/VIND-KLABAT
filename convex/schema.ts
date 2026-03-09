@@ -13,6 +13,7 @@ export default defineSchema({
     nim: v.optional(v.string()),
     program: v.optional(v.string()),
     semester: v.optional(v.number()),
+    krsSubmitted: v.optional(v.boolean()),
     // Lecturer-specific
     nidn: v.optional(v.string()),
     department: v.optional(v.string()),
@@ -28,7 +29,7 @@ export default defineSchema({
     name: v.string(),
     credits: v.number(),
     lecturerId: v.id("users"),
-    day: v.array(v.string()),          // e.g. "Monday"
+    day: v.union(v.string(), v.array(v.string())), // Can be string ("Monday") or array (["Monday", "Wednesday"])
     time: v.string(),         // e.g. "08:00 - 09:40"
     room: v.string(),
     semester: v.number(),

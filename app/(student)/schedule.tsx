@@ -1,17 +1,9 @@
-/**
- * schedule.tsx — Student Weekly Schedule
- *
- * NOTE: Uses dummy data (dummyScheduleData.ts) for semesters 1–5
- * while Dev 2's KRS enrollment feature is pending.
- * TODO: Replace dummy data lookup with:
- *   useQuery(api.courses.getEnrolledCourses, { studentId: user._id, semester: selectedSemester })
- * once feat/student-krs is merged.
- */
-
+import { Card, EmptyState, GradientHeader } from "@/components/ui";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import useAuth from "@/hooks/useAuth";
 import useTheme from "@/hooks/useTheme";
-import { Card, EmptyState, GradientHeader } from "@/components/ui";
-import { getDummySemesterSchedule, ScheduleCourse } from "./dummyScheduleData";
+import { useQuery } from "convex/react";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -38,24 +30,25 @@ export default function ScheduleScreen() {
   const [selectedSemester, setSelectedSemester] = useState(maxSemester);
   const [selectedDay, setSelectedDay] = useState(getTodayDay());
 
-  // ── Dummy data (temporary until Dev 2 KRS is live) ──────────────────────────
-  const semesterData = getDummySemesterSchedule(user?.nim, user?.email, selectedSemester);
-  const allCourses: ScheduleCourse[] = semesterData?.courses ?? [];
-  const todayCourses = allCourses.filter((c) => c.day === selectedDay);
+  // ── Convex Query ──────────────────────────
+  const enrolledCourses = useQuery(
+    api.courses.getEnrolledCourses,
+    user ? { studentId: user._id as Id<"users">, semester: selectedSemester } : "skip"
+  );
+  
+  const allCourses = enrolledCourses ?? [];
+  const todayCourses = allCourses.filter((c) => c.day.includes(selectedDay));
 
   // Separate credited vs non-credit for the summary row
   const creditedCount = allCourses.filter((c) => c.credits > 0).length;
   const nonCreditCount = allCourses.filter((c) => c.credits === 0).length;
+  const totalCredits = allCourses.reduce((sum, c) => sum + (c.credits || 0), 0);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <GradientHeader
         title="Jadwal Kuliah"
-        subtitle={
-          semesterData
-            ? `Semester ${selectedSemester}  ·  ${semesterData.period}`
-            : `Semester ${selectedSemester}`
-        }
+        subtitle={`Semester ${selectedSemester}`}
       />
 
       {/* ── Semester Selector ────────────────────────────────────────────────── */}
@@ -83,10 +76,10 @@ export default function ScheduleScreen() {
         </ScrollView>
 
         {/* SKS summary for selected semester */}
-        {semesterData && (
+        {enrolledCourses && (
           <View style={[styles.sksSummary, { borderTopColor: colors.divider }]}>
             <Text style={[styles.sksText, { color: colors.textMuted }]}>
-              <Text style={{ color: colors.primary, fontWeight: "700" }}>{semesterData.totalCredits} SKS</Text>
+              <Text style={{ color: colors.primary, fontWeight: "700" }}>{totalCredits} SKS</Text>
               {"  ·  "}
               {creditedCount} MK berkredit{"  ·  "}
               {nonCreditCount > 0 && `${nonCreditCount} non-SKS`}

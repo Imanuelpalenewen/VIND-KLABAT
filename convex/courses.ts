@@ -114,7 +114,7 @@ export const enrollCourse = mutation({
     const targetCourse = await ctx.db.get(courseId);
     if (!targetCourse) return { success: false, reason: "course_not_found" };
 
-    if (totalCredits + targetCourse.credits > 24) {
+    if (totalCredits + targetCourse.credits > 23) {
       return { success: false, reason: "exceeds_max_credits" };
     }
 
@@ -154,20 +154,7 @@ export const dropCourse = mutation({
   },
 });
 
-// TODO: getLecturerCourses (query, Dev 3 — untuk halaman courses dosen)
-//   args: { lecturerId: v.id("users") }
-//   - Return semua MK yang diajar dosen tersebut
 
-// TODO: enrollCourse          (mutation, Dev 2 — KRS)
-//   args: { studentId: v.id("users"), courseId: v.id("courses"), semester: v.number() }
-//   - Cek batas 24 SKS sebelum insert ke tabel enrollments
-
-// TODO: dropCourse            (mutation, Dev 2 — KRS)
-//   args: { studentId: v.id("users"), courseId: v.id("courses") }
-//   - Hapus record dari tabel enrollments
-
-import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
 
 /* ─────────────────────────────────────────────
    GET COURSES TAUGHT BY A LECTURER
