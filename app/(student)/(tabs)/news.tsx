@@ -19,11 +19,37 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Category = "All" | "Academic" | "Event" | "Campus" | "General";
 
-// ─── Local images per category (fallback) ────────────────────────────────────
+// ─── Mapping foto per berita ──────────────────────────────────────────────────
+// Isi key dengan title berita PERSIS seperti di DB Convex
+// Tambah atau hapus sesuai berita yang ada
+const NEWS_IMAGES: Record<string, any> = {
+  "18 Dosen UNKLAB Lulus Sertifikasi Dosen Tahun 2025": require("@/assets/images/news-serdos.png"),
+  "Dosen UNKLAB Selesaikan Program Internasional Faith and Science": require("@/assets/images/news-faithscience.png"),
+  "Universitas Klabat Tuan Rumah 12th International Scholars Conference": require("@/assets/images/news-isc.png"),
+  "UNKLAB Luncurkan Program Rohani Membaca dan Menulis Alkitab": require("@/assets/images/news-alkitab.png"),
+  "Dekan FEB UNKLAB Hadiri Konferensi Internasional di Taiwan": require("@/assets/images/news-taiwan.png"),
+  "Table Manner Course UNKLAB Persiapkan Mahasiswa Masuk Dunia Kerja": require("@/assets/images/news-tablemanner.png"),
+  "Pimpinan UNKLAB Kunjungi SLA Mebali Toraja dan SMA Advent Makassar": require("@/assets/images/news-kunjungan.png"),
+  "Mahasiswi FILKOM UNKLAB Kembangkan AI untuk Klasifikasi Luka": require("@/assets/images/news-ai-luka.png"),
+  "Tim UVICS UNKLAB Tembus Dua Kompetisi Nasional Berbasis AI": require("@/assets/images/news-uvics.png"),
+  "In-Service Training UNKLAB 2025 Dorong Transformasi Digital Pendidikan": require("@/assets/images/news-inservice.png"),
+  "Charity CSSA UNKLAB 2025: Connected by Grace di Panti Asuhan": require("@/assets/images/news-charity.png"),
+  "Kelas Internasional AIPRO UNKLAB Bersama Student Exchange Australia": require("@/assets/images/news-aipro.png"),
+  "BEM UNKLAB 2026 Gelar Academic Minds Competition": require("@/assets/images/news-amc.png"),
+  "CSSA FILKOM UNKLAB Gelar Bible Study dan Olahraga Bersama": require("@/assets/images/news1-olahraga.png"),
+  "Kuliah Umum Gubernur Sulawesi Utara di UNKLAB 2026": require("@/assets/images/news-gubernur.png"),
+  "BEM UNKLAB 2026 Gelar Fun Run untuk Dorong Gaya Hidup Sehat": require("@/assets/images/news-funrun.png"),
+  "Semarak UNKLAB Champions League 2026": require("@/assets/images/news-championsleague.png"),
+  "Student Forum FILKOM UNKLAB Februari 2026: Wadah Konsultasi Akademik bagi Mahasiswa Tingkat Satu dan Dua": require("@/assets/images/news5-studentforum.png"),
+  "Teknologi, Iman, dan Musik: Pelayanan VOCS Choir UNKLAB Februari 2026 Menginspirasi Generasi Muda di Bitung": require("@/assets/images/news2-vocs.png"),
+  "UNKLAB Kembali Raih Stand Terbaik di Sulawesi Education & Techno Expo 2026": require("@/assets/images/news4-unklab.png"),
+};
+
+// ─── Fallback per kategori (jika title tidak ada di NEWS_IMAGES) ──────────────
 const CATEGORY_IMAGES: Record<Exclude<Category, "All">, any> = {
-  Academic: require("@/assets/images/news5-studentforum.png"),
-  Event: require("@/assets/images/news2-vocs.png"),
-  Campus: require("@/assets/images/news4-unklab.png"),
+  Academic: require("@/assets/images/news4-unklab.png"),
+  Event: require("@/assets/images/news5-studentforum.png"),
+  Campus: require("@/assets/images/news3-consul.png"),
   General: require("@/assets/images/news1-olahraga.png"),
 };
 
@@ -48,8 +74,9 @@ const CATEGORIES: Category[] = [
   "General",
 ];
 
-function getImage(category: string, imageUrl?: string): any {
+function getImage(category: string, imageUrl?: string, title?: string): any {
   if (imageUrl) return { uri: imageUrl };
+  if (title && NEWS_IMAGES[title]) return NEWS_IMAGES[title];
   const config = CATEGORY_IMAGES[category as Exclude<Category, "All">];
   return config ?? FALLBACK_IMAGE;
 }
@@ -94,7 +121,7 @@ const NewsModal = ({
   onClose: () => void;
 }) => {
   const { colors, isDarkMode } = useTheme();
-  const imgSource = getImage(item.category, item.imageUrl);
+  const imgSource = getImage(item.category, item.imageUrl, item.title);
   return (
     <Modal
       animationType="slide"
@@ -104,9 +131,9 @@ const NewsModal = ({
       <SafeAreaView style={[styles.modalSafe, { backgroundColor: colors.bg }]}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <Image
-            source={isUri(imgSource) ? imgSource : imgSource}
-            style={[styles.modalImage, { backgroundColor: isDarkMode ? "#0A0A0A" : "#F8F8F8" }]}
-            resizeMode="contain"
+            source={imgSource}
+            style={styles.modalImage}
+            resizeMode="cover"
           />
           <View style={styles.modalBody}>
             <View style={styles.modalMeta}>
@@ -149,7 +176,7 @@ const FeaturedCard = ({
   onPress: () => void;
 }) => {
   const { colors, isDarkMode } = useTheme();
-  const imgSource = getImage(item.category, item.imageUrl);
+  const imgSource = getImage(item.category, item.imageUrl, item.title);
   return (
     <TouchableOpacity
       style={[
@@ -161,8 +188,8 @@ const FeaturedCard = ({
     >
       <Image
         source={imgSource}
-        style={[styles.featuredImage, { backgroundColor: isDarkMode ? "#0A0A0A" : "#F8F8F8" }]}
-        resizeMode="contain"
+        style={styles.featuredImage}
+        resizeMode="cover"
       />
       <View style={styles.featuredContent}>
         <View style={styles.featuredMeta}>
@@ -186,18 +213,14 @@ const FeaturedCard = ({
 // ─── Recent News Card ─────────────────────────────────────────────────────────
 const RecentCard = ({ item, onPress }: { item: any; onPress: () => void }) => {
   const { colors, isDarkMode } = useTheme();
-  const imgSource = getImage(item.category, item.imageUrl);
+  const imgSource = getImage(item.category, item.imageUrl, item.title);
   return (
     <TouchableOpacity
       style={[styles.recentCard, { backgroundColor: colors.backgrounds.card }]}
       onPress={onPress}
       activeOpacity={0.82}
     >
-      <Image 
-        source={imgSource} 
-        style={[styles.recentImage, { backgroundColor: isDarkMode ? "#0A0A0A" : "#F8F8F8" }]} 
-        resizeMode="contain" 
-      />
+      <Image source={imgSource} style={styles.recentImage} resizeMode="cover" />
       <View style={styles.recentContent}>
         <View style={styles.recentMeta}>
           <Badge category={item.category} isDark={isDarkMode} />
@@ -225,7 +248,6 @@ export default function NewsScreen() {
   const [selected, setSelected] = useState<any | null>(null);
   const [activeCategory, setActiveCategory] = useState<Category>("All");
 
-  // ── Convex query ──
   const news = useQuery(api.news.getNews, {
     category: activeCategory === "All" ? undefined : activeCategory,
   });
@@ -331,7 +353,6 @@ export default function NewsScreen() {
         </ScrollView>
       )}
 
-      {/* Detail Modal */}
       {selected && (
         <NewsModal item={selected} onClose={() => setSelected(null)} />
       )}
@@ -343,7 +364,6 @@ export default function NewsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
 
-  // Header
   header: {
     paddingHorizontal: 24,
     paddingTop: 20,
@@ -379,7 +399,6 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: { color: "rgba(255,255,255,0.65)", fontSize: 13 },
 
-  // Filter
   filterScroll: { maxHeight: 56 },
   filterContent: { paddingHorizontal: 20, paddingVertical: 12, gap: 8 },
   filterChip: {
@@ -392,7 +411,6 @@ const styles = StyleSheet.create({
   filterText: { fontSize: 12, fontWeight: "600" },
   filterTextActive: { color: "#fff", fontWeight: "700" },
 
-  // Body
   body: { flex: 1 },
   bodyContent: { padding: 20, paddingBottom: 40 },
   sectionTitle: {
@@ -402,7 +420,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // Badge
   badge: {
     borderRadius: 20,
     paddingHorizontal: 10,
@@ -412,7 +429,6 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 11, fontWeight: "700" },
   newsDate: { fontSize: 11, marginLeft: 8 },
 
-  // Featured Card
   featuredCard: {
     borderRadius: 20,
     overflow: "hidden",
@@ -439,7 +455,6 @@ const styles = StyleSheet.create({
   featuredSummary: { fontSize: 13, lineHeight: 20, marginBottom: 12 },
   readMore: { fontSize: 13, color: "#4C3BCF", fontWeight: "800" },
 
-  // Recent Card
   recentCard: {
     borderRadius: 18,
     flexDirection: "row",
@@ -462,7 +477,6 @@ const styles = StyleSheet.create({
   },
   recentSummary: { fontSize: 12, lineHeight: 18 },
 
-  // Modal
   modalSafe: { flex: 1 },
   modalImage: { width: "100%", height: 240 },
   modalBody: { padding: 20 },
@@ -488,7 +502,6 @@ const styles = StyleSheet.create({
   },
   closeBtnText: { color: "#fff", fontSize: 15, fontWeight: "800" },
 
-  // States
   centered: {
     flex: 1,
     alignItems: "center",
