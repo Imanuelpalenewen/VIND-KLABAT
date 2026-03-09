@@ -13,7 +13,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -24,10 +23,11 @@ export default function LecturerDashboard() {
   const insets = useSafeAreaInsets();
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
-
   const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+  const salam =
+    hour < 12 ? "Selamat Pagi" :
+    hour < 17 ? "Selamat Siang" :
+                "Selamat Malam";
 
   // ── Convex queries ──────────────────────────────────────────────────────────
   const courses = useQuery(
@@ -42,9 +42,7 @@ export default function LecturerDashboard() {
 
   const consultRequests = useQuery(
     api.consultations.getLecturerConsultations,
-    user
-      ? { lecturerId: user._id as Id<"users">, status: "pending" }
-      : "skip",
+    user ? { lecturerId: user._id as Id<"users">, status: "pending" } : "skip",
   );
 
   const respondConsult = useMutation(api.consultations.updateStatus);
@@ -56,15 +54,14 @@ export default function LecturerDashboard() {
     action: "accepted" | "rejected",
   ) => {
     Alert.alert(
-      action === "accepted" ? "Accept Request" : "Decline Request",
-      `${action === "accepted" ? "Accept" : "Decline"} consultation from ${studentName}?`,
+      action === "accepted" ? "Terima Konsultasi" : "Tolak Konsultasi",
+      `${action === "accepted" ? "Terima" : "Tolak"} permintaan konsultasi dari ${studentName}?`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: "Batal", style: "cancel" },
         {
-          text: action === "accepted" ? "Accept" : "Decline",
+          text: action === "accepted" ? "Terima" : "Tolak",
           style: action === "accepted" ? "default" : "destructive",
-          onPress: () =>
-            respondConsult({ consultationId: id, status: action }),
+          onPress: () => respondConsult({ consultationId: id, status: action }),
         },
       ],
     );
@@ -88,7 +85,7 @@ export default function LecturerDashboard() {
 
         <View style={styles.topRow}>
           <View>
-            <Text style={styles.greeting}>{greeting} 👋</Text>
+            <Text style={styles.greeting}>{salam} 👋</Text>
             <Text style={styles.userName}>{user?.name}</Text>
             <View style={styles.chips}>
               <View style={styles.chip}>
@@ -102,27 +99,23 @@ export default function LecturerDashboard() {
             </View>
           </View>
 
-          {/* Avatar — tap to go to profile */}
-          <TouchableOpacity
-            onPress={() => router.push("/(lecturer)/(tabs)/profile")}
-            activeOpacity={0.8}
-          >
-            <LinearGradient colors={colors.gradients.sky} style={styles.avatar}>
-              <Ionicons name="person" size={22} color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
+
         </View>
 
         <View style={styles.statsRow}>
           <StatChip
             value={String(courses?.length ?? 0)}
-            label="Courses"
+            label="Mata Kuliah"
             color={colors.info}
           />
-          <StatChip value="115" label="Students" color={colors.success} />
+          <StatChip
+            value="115"
+            label="Mahasiswa"
+            color={colors.success}
+          />
           <StatChip
             value={String(consultRequests?.length ?? 0)}
-            label="Requests"
+            label="Permintaan"
             color={colors.warning}
           />
         </View>
@@ -130,12 +123,12 @@ export default function LecturerDashboard() {
 
       <View style={styles.body}>
 
-        {/* ── Teaching Today ── */}
-        <SectionHeader title="Teaching Today" />
+        {/* ── Mengajar Hari Ini ── */}
+        <SectionHeader title="Mengajar Hari Ini" />
 
         {todayCourses?.length === 0 && (
           <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-            No classes today 🎉
+            Tidak ada kelas hari ini 🎉
           </Text>
         )}
 
@@ -172,11 +165,10 @@ export default function LecturerDashboard() {
           </Card>
         ))}
 
-        {/* ── My Courses ── */}
-        {/* "View all" navigates to the Courses tab */}
+        {/* ── Mata Kuliah Saya ── */}
         <SectionHeader
-          title="My Courses"
-          action="View all"
+          title="Mata Kuliah Saya"
+          action="Lihat Semua"
           onAction={() => router.push("/(lecturer)/(tabs)/courses")}
         />
 
@@ -213,10 +205,10 @@ export default function LecturerDashboard() {
           ))}
         </View>
 
-        {/* ── Consultation Requests (live dari Convex) ── */}
+        {/* ── Permintaan Konsultasi ── */}
         <View style={styles.requestsHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Consultation Requests
+            Permintaan Konsultasi
           </Text>
           {(consultRequests?.length ?? 0) > 0 && (
             <View style={[styles.requestsBadge, { backgroundColor: colors.danger }]}>
@@ -229,7 +221,7 @@ export default function LecturerDashboard() {
 
         {consultRequests?.length === 0 && (
           <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-            No pending requests ✅
+            Tidak ada permintaan menunggu ✅
           </Text>
         )}
 
@@ -244,7 +236,7 @@ export default function LecturerDashboard() {
                   {r.studentName}
                 </Text>
                 <Text style={[styles.reqNim, { color: colors.textMuted }]}>
-                  {r.topic ?? "Consultation"}
+                  {r.topic ?? "Konsultasi"}
                 </Text>
               </View>
               <View style={[styles.reqMode, { backgroundColor: `${colors.info}20` }]}>
@@ -272,7 +264,7 @@ export default function LecturerDashboard() {
                   style={styles.acceptBtnInner}
                 >
                   <Ionicons name="checkmark" size={14} color="#fff" />
-                  <Text style={styles.acceptBtnText}>Accept</Text>
+                  <Text style={styles.acceptBtnText}>Terima</Text>
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -286,7 +278,7 @@ export default function LecturerDashboard() {
               >
                 <Ionicons name="close" size={14} color={colors.textMuted} />
                 <Text style={[styles.rejectBtnText, { color: colors.textMuted }]}>
-                  Decline
+                  Tolak
                 </Text>
               </TouchableOpacity>
             </View>
@@ -298,7 +290,9 @@ export default function LecturerDashboard() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1 },
+  scroll: {
+    flex: 1,
+  },
   header: {
     paddingHorizontal: 24,
     paddingBottom: 24,
@@ -307,92 +301,228 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   heroDeco1: {
-    position: "absolute", top: -40, right: -40,
-    width: 180, height: 180, borderRadius: 90,
+    position: "absolute",
+    top: -40,
+    right: -40,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     backgroundColor: "rgba(76,59,207,0.3)",
   },
   heroDeco2: {
-    position: "absolute", bottom: -20, left: -20,
-    width: 120, height: 120, borderRadius: 60,
+    position: "absolute",
+    bottom: -20,
+    left: -20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: "rgba(78,173,255,0.12)",
   },
-  topRow: { flexDirection: "row", justifyContent: "space-between" },
-  greeting: { color: "rgba(255,255,255,0.55)", fontSize: 13 },
-  userName: { color: "#fff", fontSize: 26, fontWeight: "800" },
-  chips: { flexDirection: "row", gap: 8, marginTop: 10 },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  greeting: {
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 13,
+  },
+  userName: {
+    color: "#fff",
+    fontSize: 26,
+    fontWeight: "800",
+  },
+  chips: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
   chip: {
     backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
-  chipText: { color: "#fff", fontSize: 10, fontWeight: "600" },
-  avatar: {
-    width: 48, height: 48, borderRadius: 24,
-    alignItems: "center", justifyContent: "center",
+  chipText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "600",
   },
-  statsRow: { flexDirection: "row", gap: 10, marginTop: 16 },
-  body: { padding: 20 },
 
-  emptyText: { fontSize: 13, marginBottom: 20, fontStyle: "italic" },
+  statsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 16,
+  },
+  body: {
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 13,
+    marginBottom: 20,
+    fontStyle: "italic",
+  },
 
-  todayCard: { marginBottom: 16 },
-  todayTop: { flexDirection: "row", justifyContent: "space-between" },
-  todayCourse: { fontSize: 16, fontWeight: "700" },
-  todayMeta: { fontSize: 13, marginTop: 4 },
+  // Today card
+  todayCard: {
+    marginBottom: 16,
+  },
+  todayTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  todayCourse: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  todayMeta: {
+    fontSize: 13,
+    marginTop: 4,
+  },
   todayIcon: {
-    width: 46, height: 46, borderRadius: 14,
-    alignItems: "center", justifyContent: "center",
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  todayChips: { flexDirection: "row", gap: 8, marginTop: 14 },
-  todayChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  todayChipText: { fontSize: 10, fontWeight: "700" },
+  todayChips: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 14,
+  },
+  todayChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  todayChipText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
 
-  courseList: { gap: 10, marginBottom: 28 },
-  courseCard: { flexDirection: "row", alignItems: "center", gap: 12 },
+  // Course list
+  courseList: {
+    gap: 10,
+    marginBottom: 28,
+  },
+  courseCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
   courseIcon: {
-    width: 42, height: 42, borderRadius: 13,
-    alignItems: "center", justifyContent: "center",
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  courseInfo: { flex: 1 },
-  courseName: { fontSize: 13, fontWeight: "700" },
-  courseMeta: { fontSize: 11, marginTop: 2 },
+  courseInfo: {
+    flex: 1,
+  },
+  courseName: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  courseMeta: {
+    fontSize: 11,
+    marginTop: 2,
+  },
 
+  // Consultation
   requestsHeader: {
-    flexDirection: "row", alignItems: "center",
-    gap: 10, marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14,
   },
-  sectionTitle: { fontSize: 14, fontWeight: "700" },
-  requestsBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
-  requestsBadgeText: { color: "#fff", fontSize: 10, fontWeight: "800" },
-
-  requestCard: { marginBottom: 12 },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  requestsBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  requestsBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  requestCard: {
+    marginBottom: 12,
+  },
   reqTop: {
-    flexDirection: "row", alignItems: "center",
-    gap: 12, marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
   },
   reqAvatar: {
-    width: 42, height: 42, borderRadius: 14,
-    alignItems: "center", justifyContent: "center",
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  reqName: { fontSize: 14, fontWeight: "700" },
-  reqNim: { fontSize: 11, marginTop: 2 },
-  reqMode: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  reqModeText: { fontSize: 10, fontWeight: "700" },
+  reqName: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  reqNim: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  reqMode: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  reqModeText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
   reqTime: {
-    flexDirection: "row", alignItems: "center",
-    gap: 4, marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 14,
   },
-  reqTimeText: { fontSize: 11 },
-  reqBtns: { flexDirection: "row", gap: 10 },
+  reqTimeText: {
+    fontSize: 11,
+  },
+  reqBtns: {
+    flexDirection: "row",
+    gap: 10,
+  },
   acceptBtnInner: {
-    flexDirection: "row", alignItems: "center",
-    justifyContent: "center", gap: 6,
-    paddingVertical: 12, minHeight: 44, borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    minHeight: 44,
+    borderRadius: 12,
   },
-  acceptBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  acceptBtnText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
   rejectBtn: {
-    flex: 1, flexDirection: "row", alignItems: "center",
-    justifyContent: "center", gap: 6,
-    paddingVertical: 12, minHeight: 44, borderRadius: 12, borderWidth: 1.5,
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1.5,
   },
-  rejectBtnText: { fontSize: 13, fontWeight: "700" },
+  rejectBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
 });

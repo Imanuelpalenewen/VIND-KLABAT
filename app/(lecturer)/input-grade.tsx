@@ -18,22 +18,21 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
-// ─── Grade options ────────────────────────────────────────────────────────────
+// ─── Nilai options ────────────────────────────────────────────────────────────
 const GRADE_OPTIONS = [
-  { label: "A+", point: 4.0, color: "#3ECFAE" },
   { label: "A",  point: 4.0, color: "#3ECFAE" },
-  { label: "A-", point: 3.7, color: "#5ED8BB" },
+  { label: "A-", point: 3.7, color: "#3ECFAE" },
   { label: "B+", point: 3.3, color: "#4EADFF" },
   { label: "B",  point: 3.0, color: "#4EADFF" },
-  { label: "B-", point: 2.7, color: "#7EC5FF" },
+  { label: "B-", point: 2.7, color: "#FFAA3B" },
   { label: "C+", point: 2.3, color: "#FFAA3B" },
-  { label: "C",  point: 2.0, color: "#FFAA3B" },
+  { label: "C",  point: 2.0, color: "#FF6B8A" },
   { label: "D",  point: 1.0, color: "#FF6B8A" },
-  { label: "F",  point: 0.0, color: "#FF6B8A" },
+  { label: "E",  point: 0.0, color: "#8B92B8" },
 ];
 
-// ─── Score Input ──────────────────────────────────────────────────────────────
-function ScoreInput({
+// ─── Skor Input ──────────────────────────────────────────────────────────────
+function SkorInput({
   label,
   value,
   onChangeText,
@@ -74,7 +73,7 @@ function ScoreInput({
 }
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
-export default function InputGradeScreen() {
+export default function InputNilaiScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { studentId, courseId, studentName } = useLocalSearchParams<{
@@ -83,15 +82,15 @@ export default function InputGradeScreen() {
     studentName: string;
   }>();
 
-  const upsertGrade = useMutation(api.grades.upsertGrade);
+  const upsertNilai = useMutation(api.grades.upsertGrade);
 
   // Selected grade letter
-  const [selectedGrade, setSelectedGrade] = useState<string>("");
+  const [selectedNilai, setSelectedNilai] = useState<string>("");
 
   // Component scores
-  const [midterm,     setMidterm]     = useState("");
-  const [finalExam,   setFinalExam]   = useState("");
-  const [assignments, setAssignments] = useState("");
+  const [midterm,     setUTS]     = useState("");
+  const [finalExam,   setUASExam]   = useState("");
+  const [assignments, setTugas] = useState("");
   const [loading,     setLoading]     = useState(false);
 
   // Auto-calculate letter grade from scores
@@ -103,47 +102,46 @@ export default function InputGradeScreen() {
     return m * 0.30 + f * 0.50 + a * 0.20;
   };
 
-  const avgScore = calcAvg();
+  const avgSkor = calcAvg();
 
-  const autoGrade = (score: number | null) => {
+  const autoNilai = (score: number | null) => {
     if (score === null) return null;
-    if (score >= 97) return "A+";
-    if (score >= 93) return "A";
-    if (score >= 90) return "A-";
-    if (score >= 87) return "B+";
-    if (score >= 83) return "B";
-    if (score >= 80) return "B-";
-    if (score >= 77) return "C+";
-    if (score >= 70) return "C";
-    if (score >= 60) return "D";
-    return "F";
+    if (score >= 85) return "A";
+    if (score >= 80) return "A-";
+    if (score >= 75) return "B+";
+    if (score >= 70) return "B";
+    if (score >= 65) return "B-";
+    if (score >= 60) return "C+";
+    if (score >= 55) return "C";
+    if (score >= 40) return "D";
+    return "E";
   };
 
   // Use manual selection if set, otherwise auto
-  const finalGrade = selectedGrade || autoGrade(avgScore) || "";
-  const gradeObj   = GRADE_OPTIONS.find((g) => g.label === finalGrade);
+  const finalNilai = selectedNilai || autoNilai(avgSkor) || "";
+  const gradeObj   = GRADE_OPTIONS.find((g) => g.label === finalNilai);
   const gradeColor = gradeObj?.color ?? colors.textMuted;
   const gradePoint = gradeObj?.point ?? 0;
 
   const handleSave = async () => {
-    if (!finalGrade) {
-      Alert.alert("Oops", "Please select or calculate a grade first.");
+    if (!finalNilai) {
+      Alert.alert("Oops", "Pilih atau hitung nilai terlebih dahulu.");
       return;
     }
     setLoading(true);
     try {
-      await upsertGrade({
+      await upsertNilai({
         studentId:  studentId  as Id<"users">,
         courseId:   courseId   as Id<"courses">,
         semester:   5,
-        grade:      finalGrade,
+        grade:      finalNilai,
         gradePoint: gradePoint,
       });
-      Alert.alert("Saved ✅", `Grade ${finalGrade} (${gradePoint}) saved for ${studentName}.`, [
-        { text: "OK", onPress: () => router.back() },
+      Alert.alert("Saved ✅", `Nilai ${finalNilai} (${gradePoint}) saved for ${studentName}.`, [
+        { text: "Oke", onPress: () => router.back() },
       ]);
     } catch {
-      Alert.alert("Error", "Failed to save grade. Please try again.");
+      Alert.alert("Error", "Gagal menyimpan nilai. Coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -165,7 +163,7 @@ export default function InputGradeScreen() {
           <Ionicons name="arrow-back" size={20} color="#fff" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Input Grade</Text>
+        <Text style={styles.headerTitle}>Input Nilai</Text>
         <Text style={styles.headerSub}>
           {studentName ?? "Student"}
         </Text>
@@ -173,24 +171,24 @@ export default function InputGradeScreen() {
         {/* Live grade preview */}
         <View style={styles.previewRow}>
           <View style={styles.previewCard}>
-            <Text style={[styles.previewGrade, { color: gradeColor }]}>
-              {finalGrade || "—"}
+            <Text style={[styles.previewNilai, { color: gradeColor }]}>
+              {finalNilai || "—"}
             </Text>
-            <Text style={styles.previewLabel}>Grade</Text>
+            <Text style={styles.previewLabel}>Nilai</Text>
           </View>
           <View style={styles.previewDivider} />
           <View style={styles.previewCard}>
-            <Text style={[styles.previewGrade, { color: "#4EADFF" }]}>
-              {finalGrade ? gradePoint.toFixed(1) : "—"}
+            <Text style={[styles.previewNilai, { color: "#4EADFF" }]}>
+              {finalNilai ? gradePoint.toFixed(1) : "—"}
             </Text>
-            <Text style={styles.previewLabel}>Points</Text>
+            <Text style={styles.previewLabel}>Poin</Text>
           </View>
           <View style={styles.previewDivider} />
           <View style={styles.previewCard}>
-            <Text style={[styles.previewGrade, { color: "#FFAA3B" }]}>
-              {avgScore !== null ? avgScore.toFixed(1) : "—"}
+            <Text style={[styles.previewNilai, { color: "#FFAA3B" }]}>
+              {avgSkor !== null ? avgSkor.toFixed(1) : "—"}
             </Text>
-            <Text style={styles.previewLabel}>Score</Text>
+            <Text style={styles.previewLabel}>Skor</Text>
           </View>
         </View>
       </LinearGradient>
@@ -200,31 +198,31 @@ export default function InputGradeScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── Component Scores ── */}
+        {/* ── Komponen Nilai ── */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Component Scores
+          Komponen Nilai
         </Text>
         <Card style={styles.scoresCard} padding={16}>
-          <ScoreInput
-            label="Midterm Exam"
+          <SkorInput
+            label="Ujian Tengah Semester"
             value={midterm}
-            onChangeText={(v) => { setMidterm(v); setSelectedGrade(""); }}
+            onChangeText={(v) => { setUTS(v); setSelectedNilai(""); }}
             placeholder="0 – 100"
             icon="document-text-outline"
           />
           <Divider style={{ marginVertical: 12 }} />
-          <ScoreInput
-            label="Final Exam"
+          <SkorInput
+            label="Ujian Akhir Semester"
             value={finalExam}
-            onChangeText={(v) => { setFinalExam(v); setSelectedGrade(""); }}
+            onChangeText={(v) => { setUASExam(v); setSelectedNilai(""); }}
             placeholder="0 – 100"
             icon="school-outline"
           />
           <Divider style={{ marginVertical: 12 }} />
-          <ScoreInput
-            label="Assignments"
+          <SkorInput
+            label="Tugas"
             value={assignments}
-            onChangeText={(v) => { setAssignments(v); setSelectedGrade(""); }}
+            onChangeText={(v) => { setTugas(v); setSelectedNilai(""); }}
             placeholder="0 – 100"
             icon="clipboard-outline"
           />
@@ -232,9 +230,9 @@ export default function InputGradeScreen() {
           {/* Weight info */}
           <View style={[styles.weightRow, { backgroundColor: colors.bg }]}>
             {[
-              { label: "Midterm", w: "30%" },
-              { label: "Final",   w: "50%" },
-              { label: "Assign.", w: "20%" },
+              { label: "UTS", w: "30%" },
+              { label: "UAS",   w: "50%" },
+              { label: "Tugas", w: "20%" },
             ].map((w) => (
               <View key={w.label} style={styles.weightItem}>
                 <Text style={[styles.weightVal, { color: colors.primary }]}>{w.w}</Text>
@@ -244,34 +242,17 @@ export default function InputGradeScreen() {
           </View>
         </Card>
 
-        {/* ── Grade Scale Reference ── */}
-        <Card style={{ marginBottom: 24 }} padding={16}>
-          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 8 }]}>Grade Scale</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>A+ : 97 – 100</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>A : 93 – 96</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>A- : 90 – 92</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>B+ : 87 – 89</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>B : 83 – 86</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>B- : 80 – 82</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>C+ : 77 – 79</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>C : 70 – 76</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>D : 60 – 69</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>F : 0 – 59</Text>
-          </View>
-        </Card>
-
-        {/* ── Manual Grade Selector ── */}
+        {/* ── Manual Nilai Selector ── */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Or Select Grade Manually
+          Atau Pilih Nilai Manual
         </Text>
         <View style={styles.gradeGrid}>
           {GRADE_OPTIONS.map((g) => {
-            const isSelected = finalGrade === g.label;
+            const isSelected = finalNilai === g.label;
             return (
               <TouchableOpacity
                 key={g.label}
-                onPress={() => setSelectedGrade(isSelected ? "" : g.label)}
+                onPress={() => setSelectedNilai(isSelected ? "" : g.label)}
                 activeOpacity={0.8}
                 style={[
                   styles.gradeBtn,
@@ -294,16 +275,16 @@ export default function InputGradeScreen() {
         </View>
 
         {/* ── Summary ── */}
-        {finalGrade !== "" && (
+        {finalNilai !== "" && (
           <Card style={styles.summaryCard} padding={16}>
             <View style={styles.summaryRow}>
               <View style={[styles.summaryDot, { backgroundColor: gradeColor }]} />
               <Text style={[styles.summaryText, { color: colors.text }]}>
-                Final grade for{" "}
+                Nilai akhir untuk{" "}
                 <Text style={{ fontWeight: "800" }}>{studentName}</Text>
-                {" "}will be set to{" "}
+                {" "}akan diatur menjadi{" "}
                 <Text style={{ color: gradeColor, fontWeight: "800" }}>
-                  {finalGrade} ({gradePoint.toFixed(1)})
+                  {finalNilai} ({gradePoint.toFixed(1)})
                 </Text>
               </Text>
             </View>
@@ -311,7 +292,7 @@ export default function InputGradeScreen() {
         )}
 
         <PrimaryButton
-          label={loading ? "Saving..." : "Save Grade"}
+          label={loading ? "Menyimpan..." : "Simpan Nilai"}
           onPress={handleSave}
           loading={loading}
           style={styles.saveBtn}
@@ -365,7 +346,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
   },
   previewCard:    { flex: 1, alignItems: "center" },
-  previewGrade:   { fontSize: 22, fontWeight: "900" },
+  previewNilai:   { fontSize: 22, fontWeight: "900" },
   previewLabel:   { color: "rgba(255,255,255,0.4)", fontSize: 9, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 3 },
   previewDivider: { width: 1, backgroundColor: "rgba(255,255,255,0.15)", marginVertical: 4 },
 
@@ -373,7 +354,7 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 20, paddingTop: 24 },
   sectionTitle: { fontSize: 13, fontWeight: "800", marginBottom: 12 },
 
-  // Scores
+  // Skors
   scoresCard: { marginBottom: 24 },
   scoreField: { gap: 6 },
   scoreLabel: { fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
@@ -394,7 +375,7 @@ const styles = StyleSheet.create({
   weightVal:   { fontSize: 13, fontWeight: "800" },
   weightLabel: { fontSize: 9, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.5 },
 
-  // Grade grid
+  // Nilai grid
   gradeGrid: {
     flexDirection: "row", flexWrap: "wrap",
     gap: 10, marginBottom: 24,
