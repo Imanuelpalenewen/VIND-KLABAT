@@ -20,8 +20,6 @@ import {
 type Category = "All" | "Academic" | "Event" | "Campus" | "General";
 
 // ─── Mapping foto per berita ──────────────────────────────────────────────────
-// Isi key dengan title berita PERSIS seperti di DB Convex
-// Tambah atau hapus sesuai berita yang ada
 const NEWS_IMAGES: Record<string, any> = {
   "18 Dosen UNKLAB Lulus Sertifikasi Dosen Tahun 2025": require("@/assets/images/news-serdos.png"),
   "Dosen UNKLAB Selesaikan Program Internasional Faith and Science": require("@/assets/images/news-faithscience.png"),
@@ -45,7 +43,7 @@ const NEWS_IMAGES: Record<string, any> = {
   "UNKLAB Kembali Raih Stand Terbaik di Sulawesi Education & Techno Expo 2026": require("@/assets/images/news4-unklab.png"),
 };
 
-// ─── Fallback per kategori (jika title tidak ada di NEWS_IMAGES) ──────────────
+// ─── Fallback per kategori ────────────────────────────────────────────────────
 const CATEGORY_IMAGES: Record<Exclude<Category, "All">, any> = {
   Academic: require("@/assets/images/news4-unklab.png"),
   Event: require("@/assets/images/news5-studentforum.png"),
@@ -79,10 +77,6 @@ function getImage(category: string, imageUrl?: string, title?: string): any {
   if (title && NEWS_IMAGES[title]) return NEWS_IMAGES[title];
   const config = CATEGORY_IMAGES[category as Exclude<Category, "All">];
   return config ?? FALLBACK_IMAGE;
-}
-
-function isUri(source: any): boolean {
-  return source && typeof source === "object" && "uri" in source;
 }
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
@@ -122,6 +116,7 @@ const NewsModal = ({
 }) => {
   const { colors, isDarkMode } = useTheme();
   const imgSource = getImage(item.category, item.imageUrl, item.title);
+
   return (
     <Modal
       animationType="slide"
@@ -129,17 +124,28 @@ const NewsModal = ({
       onRequestClose={onClose}
     >
       <SafeAreaView style={[styles.modalSafe, { backgroundColor: colors.bg }]}>
+        {/* ── Konten scrollable ── */}
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Image
-            source={imgSource}
-            style={styles.modalImage}
-            resizeMode="cover"
-          />
+          {/* Foto cover + gradient fade bawah + tombol back overlay */}
+          <View style={styles.modalImageWrapper}>
+            <Image
+              source={imgSource}
+              style={styles.modalImage}
+              resizeMode="cover"
+            />
+            {/* Fade bawah */}
+            <LinearGradient
+              colors={["transparent", isDarkMode ? colors.bg : "#ffffff"]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
           <View style={styles.modalBody}>
             <View style={styles.modalMeta}>
               <Badge category={item.category} isDark={isDarkMode} />
               <Text style={[styles.modalDate, { color: colors.textMuted }]}>
-                📅 {item.date}
+                {item.date}
               </Text>
             </View>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -149,16 +155,24 @@ const NewsModal = ({
               {item.content}
             </Text>
           </View>
+          {/* Spacer supaya konten tidak tertutup tombol back */}
+          <View style={{ height: 100 }} />
         </ScrollView>
-        <View style={styles.modalFooter}>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.85}>
+
+        {/* ── Back button di bawah, floating ── */}
+        <View style={[styles.modalFooter, { backgroundColor: colors.bg }]}>
+          <TouchableOpacity
+            onPress={onClose}
+            activeOpacity={0.75}
+            style={styles.backBtn}
+          >
             <LinearGradient
               colors={["#4C3BCF", "#7B6FF0"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.closeBtn}
+              style={styles.backBtnGradient}
             >
-              <Text style={styles.closeBtnText}>← Back to News</Text>
+              <Text style={styles.backBtnText}>← Back to News</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -194,8 +208,9 @@ const FeaturedCard = ({
       <View style={styles.featuredContent}>
         <View style={styles.featuredMeta}>
           <Badge category={item.category} isDark={isDarkMode} />
+          {/* Tanggal tanpa emoji */}
           <Text style={[styles.newsDate, { color: colors.textMuted }]}>
-            📅 {item.date}
+            {item.date}
           </Text>
         </View>
         <Text style={[styles.featuredTitle, { color: colors.text }]}>
@@ -224,8 +239,9 @@ const RecentCard = ({ item, onPress }: { item: any; onPress: () => void }) => {
       <View style={styles.recentContent}>
         <View style={styles.recentMeta}>
           <Badge category={item.category} isDark={isDarkMode} />
+          {/* Tanggal tanpa emoji */}
           <Text style={[styles.newsDate, { color: colors.textMuted }]}>
-            📅 {item.date}
+            {item.date}
           </Text>
         </View>
         <Text style={[styles.recentTitle, { color: colors.text }]}>
@@ -477,8 +493,40 @@ const styles = StyleSheet.create({
   },
   recentSummary: { fontSize: 12, lineHeight: 18 },
 
+  // ── Modal styles ──
   modalSafe: { flex: 1 },
-  modalImage: { width: "100%", height: 240 },
+
+  // Footer modal dengan tombol back di bawah
+  modalFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0,0,0,0.08)",
+  },
+  backBtn: { alignSelf: "stretch" },
+  backBtnGradient: {
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: "center",
+    shadowColor: "#4C3BCF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  backBtnText: { color: "#fff", fontSize: 15, fontWeight: "800" },
+
+  modalImageWrapper: {
+    width: "100%",
+    height: 240,
+    overflow: "hidden",
+  },
+  // Foto cover penuh
+  modalImage: {
+    width: "100%",
+    height: 240,
+  },
+
   modalBody: { padding: 20 },
   modalMeta: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   modalDate: { fontSize: 12, marginLeft: 10 },
@@ -489,18 +537,6 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   modalText: { fontSize: 14, lineHeight: 24 },
-  modalFooter: { padding: 20, paddingTop: 0 },
-  closeBtn: {
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: "center",
-    shadowColor: "#4C3BCF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  closeBtnText: { color: "#fff", fontSize: 15, fontWeight: "800" },
 
   centered: {
     flex: 1,
