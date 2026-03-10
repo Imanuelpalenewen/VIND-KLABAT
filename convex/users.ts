@@ -1,5 +1,5 @@
-import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
 // ─── login ──────────────────────────────────────────────────────────────────────
 export const login = mutation({
@@ -62,4 +62,3 @@ export const submitKRS = mutation({
     return { success: true };
   },
 });
-
