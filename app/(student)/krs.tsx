@@ -34,7 +34,11 @@ const StatBox = ({
 }) => (
   <View style={styles.statBox}>
     <Text style={[styles.statValue, { color: valueColor }]}>{value}</Text>
-    {subtitle && <Text style={[styles.statSubtitle, { color: valueColor }]}>{subtitle}</Text>}
+    {subtitle && (
+      <Text style={[styles.statSubtitle, { color: valueColor }]}>
+        {subtitle}
+      </Text>
+    )}
     <Text style={styles.statLabel}>{label}</Text>
   </View>
 );
@@ -154,8 +158,12 @@ export default function KRSScreen() {
   const dropCourse = useMutation(api.courses.dropCourse);
   const submitKRS = useMutation(api.users.submitKRS);
 
-  const userRecord = useQuery(api.users.getUser, studentId ? { userId: studentId } : "skip");
-  const isSubmitted = userRecord === undefined ? false : (userRecord?.krsSubmitted ?? false);
+  const userRecord = useQuery(
+    api.users.getUser,
+    studentId ? { userId: studentId } : "skip",
+  );
+  const isSubmitted =
+    userRecord === undefined ? false : (userRecord?.krsSubmitted ?? false);
 
   const enrolledIds = new Set(enrollments?.map((e) => e._id.toString()) ?? []);
 
@@ -263,8 +271,8 @@ export default function KRSScreen() {
             totalCredits >= MAX_CREDITS
               ? colors.danger
               : totalCredits >= MAX_CREDITS - 3
-              ? colors.warning
-              : colors.info
+                ? colors.warning
+                : colors.info
           }
         />
         <View
@@ -279,15 +287,31 @@ export default function KRSScreen() {
 
       {/* ── SKS Limit Warning ── */}
       {!isSubmitted && totalCredits >= MAX_CREDITS && (
-        <View style={[styles.warningBanner, { backgroundColor: `${colors.danger}18`, borderColor: `${colors.danger}55` }]}>
+        <View
+          style={[
+            styles.warningBanner,
+            {
+              backgroundColor: `${colors.danger}18`,
+              borderColor: `${colors.danger}55`,
+            },
+          ]}
+        >
           <Text style={[styles.warningText, { color: colors.danger }]}>
-            ⚠️  SKS limit reached ({MAX_CREDITS}/{MAX_CREDITS}). Deselect a course to add another.
+            ⚠️ SKS limit reached ({MAX_CREDITS}/{MAX_CREDITS}). Deselect a
+            course to add another.
           </Text>
         </View>
       )}
       {!isSubmitted && totalCredits > 0 && totalCredits < MAX_CREDITS && (
-        <View style={[styles.sksBanner, { backgroundColor: colors.backgrounds.card }]}>
-          <Text style={[styles.sksProgressLabel, { color: colors.textMuted }]}>Selected SKS:</Text>
+        <View
+          style={[
+            styles.sksBanner,
+            { backgroundColor: colors.backgrounds.card },
+          ]}
+        >
+          <Text style={[styles.sksProgressLabel, { color: colors.textMuted }]}>
+            Selected SKS:
+          </Text>
           <Text style={[styles.sksProgressValue, { color: colors.primary }]}>
             {totalCredits} / {MAX_CREDITS}
           </Text>
@@ -311,7 +335,9 @@ export default function KRSScreen() {
           </View>
         ) : (
           courses
-            .filter((course) => (isSubmitted ? enrolledIds.has(course._id.toString()) : true))
+            .filter((course) =>
+              isSubmitted ? enrolledIds.has(course._id.toString()) : true,
+            )
             .map((course) => (
               <CourseCard
                 key={course._id.toString()}
@@ -320,10 +346,16 @@ export default function KRSScreen() {
                 loading={loadingId === course._id.toString()}
                 onToggle={() => {
                   if (isSubmitted) {
-                    Alert.alert("Terkunci", "Anda sudah submit KRS semester ini.");
+                    Alert.alert(
+                      "Terkunci",
+                      "Anda sudah submit KRS semester ini.",
+                    );
                     return;
                   }
-                  handleToggle(course._id, enrolledIds.has(course._id.toString()));
+                  handleToggle(
+                    course._id,
+                    enrolledIds.has(course._id.toString()),
+                  );
                 }}
               />
             ))

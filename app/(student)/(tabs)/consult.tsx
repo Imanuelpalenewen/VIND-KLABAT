@@ -4,11 +4,11 @@ import useAuth from "@/hooks/useAuth";
 import useTheme from "@/hooks/useTheme";
 import { useMutation, useQuery } from "convex/react";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,7 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Lecturer {
@@ -28,37 +27,278 @@ interface Lecturer {
 }
 
 const TIMES = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00"];
-const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
-// March 2026: starts on Sunday (index 0)
-function getCalendarDays(): (number | null)[] {
-  const cells: (number | null)[] = Array(0).fill(null);
-  for (let d = 1; d <= 31; d++) cells.push(d);
+// ─── Calendar helpers ─────────────────────────────────────────────────────────
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+function getFirstDayOfMonth(year: number, month: number): number {
+  return new Date(year, month, 1).getDay();
+}
+function getCalendarCells(year: number, month: number): (number | null)[] {
+  const firstDay = getFirstDayOfMonth(year, month);
+  const daysInMonth = getDaysInMonth(year, month);
+  const cells: (number | null)[] = Array(firstDay).fill(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   return cells;
 }
-const CALENDAR_CELLS = getCalendarDays();
-
-// Format date to "2026-03-DD"
-function formatDate(day: number): string {
-  return `2026-03-${String(day).padStart(2, "0")}`;
+function formatDate(year: number, month: number, day: number): string {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+// ─── Custom Alert Modal ───────────────────────────────────────────────────────
+const AppAlert = ({
+  visible,
+  title,
+  message,
+  type = "info",
+  onClose,
+  onConfirm,
+  confirmText = "OK",
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  type?: "info" | "success" | "warning" | "error";
+  onClose: () => void;
+  onConfirm?: () => void;
+  confirmText?: string;
+}) => {
+  const { colors } = useTheme();
+  const colorMap = {
+    info: colors.primary,
+    success: colors.success,
+    warning: colors.warning,
+    error: colors.danger,
+  };
+  const accentColor = colorMap[type];
+
+  return (
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={alertStyles.overlay}>
+        <View style={[alertStyles.card, { backgroundColor: colors.surface }]}>
+          <View
+            style={[alertStyles.accentBar, { backgroundColor: accentColor }]}
+          />
+          <Text style={[alertStyles.title, { color: colors.text }]}>
+            {title}
+          </Text>
+          <Text style={[alertStyles.message, { color: colors.textSub }]}>
+            {message}
+          </Text>
+          <View style={alertStyles.btnRow}>
+            {onConfirm && (
+              <TouchableOpacity
+                style={[alertStyles.btnOutline, { borderColor: colors.border }]}
+                onPress={onClose}
+              >
+                <Text
+                  style={[
+                    alertStyles.btnOutlineText,
+                    { color: colors.textMuted },
+                  ]}
+                >
+                  Batal
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={alertStyles.btnFill}
+              onPress={onConfirm ?? onClose}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={["#4C3BCF", "#7B6FF0"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={alertStyles.btnGradient}
+              >
+                <Text style={alertStyles.btnFillText}>{confirmText}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const alertStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
+  card: {
+    width: "100%",
+    borderRadius: 24,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  accentBar: { height: 5, width: "100%" },
+  title: {
+    fontSize: 18,
+    fontWeight: "900",
+    marginBottom: 8,
+    textAlign: "center",
+    paddingHorizontal: 28,
+    paddingTop: 24,
+  },
+  message: {
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: "center",
+    marginBottom: 24,
+    paddingHorizontal: 28,
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 28,
+    paddingBottom: 28,
+  },
+  btnOutline: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  btnOutlineText: { fontSize: 14, fontWeight: "700" },
+  btnFill: { flex: 1, borderRadius: 14, overflow: "hidden" },
+  btnGradient: { paddingVertical: 14, alignItems: "center" },
+  btnFillText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+});
+
+// ─── Accepted Notification Banner ─────────────────────────────────────────────
+const AcceptedNotif = ({
+  consultations,
+  colors,
+}: {
+  consultations: any[];
+  colors: any;
+}) => {
+  const accepted = consultations.filter((c) => c.status === "accepted");
+  const [visible, setVisible] = useState(false);
+  const [shown, setShown] = useState(false);
+  const [current, setCurrent] = useState<any>(null);
+  const [queue, setQueue] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!shown && accepted.length > 0) {
+      setQueue(accepted);
+      setCurrent(accepted[0]);
+      setVisible(true);
+      setShown(true);
+    }
+  }, [accepted.length]);
+
+  const handleClose = () => {
+    const remaining = queue.slice(1);
+    if (remaining.length > 0) {
+      setCurrent(remaining[0]);
+      setQueue(remaining);
+    } else {
+      setVisible(false);
+      setCurrent(null);
+    }
+  };
+
+  if (!current) return null;
+
+  return (
+    <AppAlert
+      visible={visible}
+      type="success"
+      title="Konsultasi Diterima"
+      message={`Dosen ${current.lecturerName} telah menerima permintaan konsultasi kamu pada ${current.date} pukul ${current.time} WIB.\n\nTopik: ${current.topic}`}
+      onClose={handleClose}
+      confirmText="Oke, Siap"
+    />
+  );
+};
+
 // ─── Step Indicator ───────────────────────────────────────────────────────────
-const StepBar = ({ step, colors }: { step: number; colors: any }) => (
-  <View style={styles.stepRow}>
+const STEP_LABELS = ["Pilih Dosen", "Jadwal", "Konfirmasi"];
+
+const StepBar = ({
+  step,
+  colors,
+  onStepPress,
+}: {
+  step: number;
+  colors: any;
+  onStepPress: (i: number) => void;
+}) => (
+  <View style={styles.stepContainer}>
     {[0, 1, 2].map((i) => (
-      <View
+      <TouchableOpacity
         key={i}
-        style={[
-          styles.stepBar,
-          i <= step ? styles.stepActive : styles.stepPending,
-        ]}
-      />
+        style={styles.stepItem}
+        onPress={() => onStepPress(i)}
+        activeOpacity={0.7}
+      >
+        <View
+          style={[
+            styles.stepBar,
+            i <= step ? styles.stepActive : styles.stepPending,
+          ]}
+        />
+        <View style={styles.stepLabelRow}>
+          <Text
+            style={[
+              styles.stepFraction,
+              { color: i <= step ? "#fff" : "rgba(255,255,255,0.35)" },
+            ]}
+          >
+            {i + 1}/3
+          </Text>
+          <Text
+            style={[
+              styles.stepLabel,
+              {
+                color:
+                  i <= step
+                    ? "rgba(255,255,255,0.85)"
+                    : "rgba(255,255,255,0.35)",
+              },
+            ]}
+          >
+            {STEP_LABELS[i]}
+          </Text>
+        </View>
+      </TouchableOpacity>
     ))}
   </View>
 );
 
-// ─── Avatar (initials) ────────────────────────────────────────────────────────
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 const Avatar = ({
   name,
   size = 48,
@@ -113,8 +353,9 @@ const ChooseLecturer = ({
 }) => {
   const lecturers = useQuery(api.consultations.getLecturers);
   const { user } = useAuth();
-  const myConsultations = useQuery(api.consultations.getMyConsultations, 
-    user ? { studentId: user._id as Id<"users"> } : "skip"
+  const myConsultations = useQuery(
+    api.consultations.getMyConsultations,
+    user ? { studentId: user._id as Id<"users"> } : "skip",
   );
 
   if (!lecturers) {
@@ -139,12 +380,18 @@ const ChooseLecturer = ({
       </Text>
       {lecturers.map((l) => {
         const isBooked = myConsultations?.some(
-          (c) => c.lecturerName === l.name && (c.status === "pending" || c.status === "accepted")
+          (c) =>
+            c.lecturerName === l.name &&
+            (c.status === "pending" || c.status === "accepted"),
         );
         return (
           <TouchableOpacity
             key={l._id}
-            style={[styles.card, { backgroundColor: colors.backgrounds.card }, isBooked && { opacity: 0.5 }]}
+            style={[
+              styles.card,
+              { backgroundColor: colors.backgrounds.card },
+              isBooked && { opacity: 0.5 },
+            ]}
             onPress={() => !isBooked && onSelect(l)}
             activeOpacity={isBooked ? 1 : 0.72}
           >
@@ -158,7 +405,12 @@ const ChooseLecturer = ({
                 {l.department}
               </Text>
             </View>
-            <Text style={[styles.statusBadge, { color: isBooked ? colors.warning : colors.success }]}>
+            <Text
+              style={[
+                styles.statusBadge,
+                { color: isBooked ? colors.warning : colors.success },
+              ]}
+            >
               {isBooked ? "Already Booked" : "Available"}
             </Text>
           </TouchableOpacity>
@@ -171,6 +423,7 @@ const ChooseLecturer = ({
 // ─── STEP 2: Date & Time ──────────────────────────────────────────────────────
 const PickDateTime = ({
   onContinue,
+  onBack,
   colors,
 }: {
   onContinue: (
@@ -180,21 +433,60 @@ const PickDateTime = ({
     topic: string,
     notes: string,
   ) => void;
+  onBack: () => void;
   colors: any;
 }) => {
-  const [selectedDay, setSelectedDay] = useState<number>(10);
+  const now = new Date();
+  const [calYear, setCalYear] = useState(now.getFullYear());
+  const [calMonth, setCalMonth] = useState(now.getMonth());
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("10:00");
   const [mode, setMode] = useState<"online" | "offline">("online");
   const [topic, setTopic] = useState("");
   const [notes, setNotes] = useState("");
+  const [alert, setAlert] = useState<{ title: string; message: string } | null>(
+    null,
+  );
+
+  const todayYear = now.getFullYear();
+  const todayMonth = now.getMonth();
+  const todayDay = now.getDate();
+  const isPrevDisabled = calYear === todayYear && calMonth === todayMonth;
+  const cells = getCalendarCells(calYear, calMonth);
+
+  const prevMonth = () => {
+    if (isPrevDisabled) return;
+    if (calMonth === 0) {
+      setCalYear((y) => y - 1);
+      setCalMonth(11);
+    } else setCalMonth((m) => m - 1);
+    setSelectedDay(null);
+  };
+  const nextMonth = () => {
+    if (calMonth === 11) {
+      setCalYear((y) => y + 1);
+      setCalMonth(0);
+    } else setCalMonth((m) => m + 1);
+    setSelectedDay(null);
+  };
 
   const handleContinue = () => {
+    if (!selectedDay) {
+      setAlert({
+        title: "Tanggal Kosong",
+        message: "Tolong pilih tanggal konsultasi terlebih dahulu.",
+      });
+      return;
+    }
     if (!topic.trim()) {
-      Alert.alert("Topik kosong", "Tolong isi topik konsultasi.");
+      setAlert({
+        title: "Topik Kosong",
+        message: "Tolong isi topik konsultasi terlebih dahulu.",
+      });
       return;
     }
     onContinue(
-      formatDate(selectedDay),
+      formatDate(calYear, calMonth, selectedDay),
       selectedTime,
       mode,
       topic.trim(),
@@ -208,27 +500,66 @@ const PickDateTime = ({
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
+      {alert && (
+        <AppAlert
+          visible
+          title={alert.title}
+          message={alert.message}
+          type="warning"
+          onClose={() => setAlert(null)}
+        />
+      )}
       <ScrollView
         contentContainerStyle={styles.bodyContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={onBack}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.backBtnText, { color: colors.primary }]}>
+            ← Kembali pilih dosen
+          </Text>
+        </TouchableOpacity>
+
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Date & Time
         </Text>
 
-        {/* Calendar */}
         <View
           style={[
             styles.calendarCard,
             { backgroundColor: colors.backgrounds.card },
           ]}
         >
-          <Text style={[styles.calendarMonth, { color: colors.text }]}>
-            March 2026
-          </Text>
+          <View style={styles.calendarHeader}>
+            <TouchableOpacity
+              onPress={prevMonth}
+              style={styles.calNavBtn}
+              disabled={isPrevDisabled}
+            >
+              <Text
+                style={[
+                  styles.calNavText,
+                  { color: isPrevDisabled ? colors.textMuted : colors.primary },
+                ]}
+              >
+                ‹
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.calendarMonth, { color: colors.text }]}>
+              {MONTH_NAMES[calMonth]} {calYear}
+            </Text>
+            <TouchableOpacity onPress={nextMonth} style={styles.calNavBtn}>
+              <Text style={[styles.calNavText, { color: colors.primary }]}>
+                ›
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.calendarGrid}>
-            {DAYS.map((d, i) => (
+            {DAY_LABELS.map((d, i) => (
               <View key={i} style={styles.calendarDayCell}>
                 <Text
                   style={[styles.calendarDayLabel, { color: colors.textMuted }]}
@@ -237,35 +568,48 @@ const PickDateTime = ({
                 </Text>
               </View>
             ))}
-            {CALENDAR_CELLS.map((day, i) => (
-              <View key={i} style={styles.calendarCell}>
-                <TouchableOpacity
-                  style={[
-                    styles.calendarDayButton,
-                    day === selectedDay && styles.calendarCellSelected,
-                  ]}
-                  onPress={() => {
-                    if (day) setSelectedDay(day);
-                  }}
-                  disabled={!day}
-                >
-                  <Text
+            {cells.map((day, i) => {
+              const isPast =
+                day !== null &&
+                (calYear < todayYear ||
+                  (calYear === todayYear && calMonth < todayMonth) ||
+                  (calYear === todayYear &&
+                    calMonth === todayMonth &&
+                    day < todayDay));
+              const isDisabled = !day || isPast;
+              return (
+                <View key={i} style={styles.calendarCell}>
+                  <TouchableOpacity
                     style={[
-                      styles.calendarCellText,
-                      { color: colors.text },
-                      day === selectedDay && styles.calendarCellTextSelected,
-                      !day && { opacity: 0 },
+                      styles.calendarDayButton,
+                      day === selectedDay &&
+                        !isPast &&
+                        styles.calendarCellSelected,
                     ]}
+                    onPress={() => {
+                      if (day && !isPast) setSelectedDay(day);
+                    }}
+                    disabled={isDisabled}
                   >
-                    {day ?? ""}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+                    <Text
+                      style={[
+                        styles.calendarCellText,
+                        { color: isPast ? colors.textMuted : colors.text },
+                        day === selectedDay &&
+                          !isPast &&
+                          styles.calendarCellTextSelected,
+                        (!day || isPast) && { opacity: isPast ? 0.35 : 0 },
+                      ]}
+                    >
+                      {day ?? ""}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
           </View>
         </View>
 
-        {/* Time Slots */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Available Times
         </Text>
@@ -299,7 +643,6 @@ const PickDateTime = ({
           ))}
         </View>
 
-        {/* Mode */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Mode</Text>
         <View style={styles.modeRow}>
           {(["online", "offline"] as const).map((m) => (
@@ -316,22 +659,12 @@ const PickDateTime = ({
               onPress={() => setMode(m)}
             >
               <Text style={styles.modeIcon}>
-                {m === "online" ? "📹" : "🏫"}
-              </Text>
-              <Text
-                style={[
-                  styles.modeText,
-                  { color: colors.text },
-                  mode === m && { color: colors.primary, fontWeight: "800" },
-                ]}
-              >
                 {m === "online" ? "Online" : "Offline"}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Topic */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Topik Konsultasi *
         </Text>
@@ -350,7 +683,6 @@ const PickDateTime = ({
           onChangeText={setTopic}
         />
 
-        {/* Notes */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Catatan (opsional)
         </Text>
@@ -396,6 +728,7 @@ const ConfirmBooking = ({
   topic,
   notes,
   onConfirm,
+  onBack,
   loading,
   colors,
 }: {
@@ -406,6 +739,7 @@ const ConfirmBooking = ({
   topic: string;
   notes: string;
   onConfirm: () => void;
+  onBack: () => void;
   loading: boolean;
   colors: any;
 }) => (
@@ -414,6 +748,16 @@ const ConfirmBooking = ({
     contentContainerStyle={styles.bodyContent}
     showsVerticalScrollIndicator={false}
   >
+    <TouchableOpacity
+      style={styles.backBtn}
+      onPress={onBack}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.backBtnText, { color: colors.primary }]}>
+        ← Kembali ubah jadwal
+      </Text>
+    </TouchableOpacity>
+
     <View
       style={[styles.confirmCard, { backgroundColor: colors.backgrounds.card }]}
     >
@@ -426,7 +770,6 @@ const ConfirmBooking = ({
       <Text style={[styles.confirmDept, { color: colors.textMuted }]}>
         {lecturer.department}
       </Text>
-
       <View style={[styles.divider, { backgroundColor: colors.divider }]} />
       <View style={styles.detailRow}>
         <Text style={[styles.detailLabel, { color: colors.textMuted }]}>
@@ -449,7 +792,7 @@ const ConfirmBooking = ({
           Mode
         </Text>
         <Text style={[styles.detailValue, { color: colors.text }]}>
-          {mode === "online" ? "📹 Online (Zoom)" : "🏫 Offline"}
+          {mode === "online" ? "Online (Zoom)" : "Offline"}
         </Text>
       </View>
       <View style={[styles.divider, { backgroundColor: colors.divider }]} />
@@ -486,8 +829,6 @@ const ConfirmBooking = ({
           </View>
         </>
       ) : null}
-
-      {/* Status badge */}
       <View style={[styles.divider, { backgroundColor: colors.divider }]} />
       <View
         style={[
@@ -496,7 +837,7 @@ const ConfirmBooking = ({
         ]}
       >
         <Text style={[styles.pendingText, { color: colors.warning }]}>
-          ⏳ Status: Pending — menunggu konfirmasi dosen
+          Status: Pending — menunggu konfirmasi dosen
         </Text>
       </View>
     </View>
@@ -515,7 +856,7 @@ const ConfirmBooking = ({
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.primaryBtnText}>✓ Confirm Booking</Text>
+          <Text style={styles.primaryBtnText}>Confirm Booking</Text>
         )}
       </LinearGradient>
     </TouchableOpacity>
@@ -526,7 +867,6 @@ const ConfirmBooking = ({
 export default function ConsultScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
 
   const [step, setStep] = useState(0);
   const [lecturer, setLecturer] = useState<Lecturer | null>(null);
@@ -536,9 +876,46 @@ export default function ConsultScreen() {
   const [topic, setTopic] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState<{
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "error";
+    onConfirm?: () => void;
+  } | null>(null);
 
   const studentId = user?._id as Id<"users"> | undefined;
   const bookConsultation = useMutation(api.consultations.bookConsultation);
+  const myConsultations = useQuery(
+    api.consultations.getMyConsultations,
+    studentId ? { studentId } : "skip",
+  );
+
+  const handleStepPress = (i: number) => {
+    if (i === step) return;
+    if (i > 0 && !lecturer) {
+      setAlert({
+        title: "Belum Selesai",
+        message:
+          "Silakan pilih dosen terlebih dahulu sebelum melanjutkan ke langkah 2/3.",
+        type: "warning",
+      });
+      return;
+    }
+    if (i === 2 && (!date || !time || !topic)) {
+      setAlert({
+        title: "Belum Selesai",
+        message:
+          "Silakan lengkapi jadwal dan topik terlebih dahulu sebelum melanjutkan ke langkah 3/3.",
+        type: "warning",
+      });
+      return;
+    }
+    if (i <= step) {
+      setStep(i);
+      return;
+    }
+    setStep(i);
+  };
 
   const handleSelectLecturer = (l: Lecturer) => {
     setLecturer(l);
@@ -573,32 +950,45 @@ export default function ConsultScreen() {
         topic,
         notes: notes || undefined,
       });
-
       if (result.success) {
-        Alert.alert(
-          "Booking Berhasil! 🎉",
-          `Konsultasi dengan ${lecturer.name} pada ${time} WIB telah dikirim. Menunggu konfirmasi dosen.`,
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                setStep(0);
-                setLecturer(null);
-              },
-            },
-          ],
-        );
+        setAlert({
+          title: "Booking Berhasil",
+          message: `Konsultasi dengan ${lecturer.name} pada ${time} WIB telah dikirim. Menunggu konfirmasi dosen.`,
+          type: "success",
+          onConfirm: () => {
+            setAlert(null);
+            setStep(0);
+            setLecturer(null);
+            setDate("");
+            setTime("");
+            setTopic("");
+            setNotes("");
+          },
+        });
       } else if (result.reason === "slot_taken") {
-        Alert.alert(
-          "Slot Sudah Diambil",
-          "Dosen sudah ada konsultasi pada waktu tersebut. Pilih waktu lain.",
-        );
-        setStep(1);
+        setAlert({
+          title: "Slot Sudah Diambil",
+          message:
+            "Dosen sudah ada konsultasi pada waktu tersebut. Pilih waktu atau tanggal lain.",
+          type: "error",
+          onConfirm: () => {
+            setAlert(null);
+            setStep(1);
+          },
+        });
       } else {
-        Alert.alert("Gagal", "Terjadi kesalahan. Coba lagi.");
+        setAlert({
+          title: "Gagal",
+          message: "Terjadi kesalahan. Coba lagi.",
+          type: "error",
+        });
       }
     } catch {
-      Alert.alert("Error", "Terjadi kesalahan. Coba lagi.");
+      setAlert({
+        title: "Error",
+        message: "Terjadi kesalahan. Coba lagi.",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -606,28 +996,44 @@ export default function ConsultScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* ── HEADER ── */}
+      {myConsultations && (
+        <AcceptedNotif consultations={myConsultations} colors={colors} />
+      )}
+
+      {alert && (
+        <AppAlert
+          visible
+          title={alert.title}
+          message={alert.message}
+          type={alert.type}
+          onClose={() => setAlert(null)}
+          onConfirm={alert.onConfirm}
+          confirmText="OK"
+        />
+      )}
+
       <LinearGradient
         colors={["#0B1437", "#1A2C6B", "#2A40A8"]}
         style={styles.header}
       >
-        {/* Decorative circles — same as GradientHeader */}
         <View style={styles.headerDeco1} />
         <View style={styles.headerDeco2} />
-
         <Text style={styles.headerTitle}>Consultation</Text>
         <Text style={styles.headerSubtitle}>
           Book a session with your lecturer
         </Text>
-        <StepBar step={step} colors={colors} />
+        <StepBar step={step} colors={colors} onStepPress={handleStepPress} />
       </LinearGradient>
 
-      {/* ── STEPS ── */}
       {step === 0 && (
         <ChooseLecturer onSelect={handleSelectLecturer} colors={colors} />
       )}
       {step === 1 && (
-        <PickDateTime onContinue={handleContinue} colors={colors} />
+        <PickDateTime
+          onContinue={handleContinue}
+          onBack={() => setStep(0)}
+          colors={colors}
+        />
       )}
       {step === 2 && lecturer && (
         <ConfirmBooking
@@ -638,6 +1044,7 @@ export default function ConsultScreen() {
           topic={topic}
           notes={notes}
           onConfirm={handleConfirm}
+          onBack={() => setStep(1)}
           loading={loading}
           colors={colors}
         />
@@ -649,8 +1056,6 @@ export default function ConsultScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  // Header
   header: {
     paddingHorizontal: 24,
     paddingTop: 20,
@@ -687,16 +1092,26 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.50)",
     fontSize: 13,
     marginTop: 3,
-    marginBottom: 18,
+    marginBottom: 14,
   },
 
-  // Step bar
-  stepRow: { flexDirection: "row", gap: 8 },
-  stepBar: { flex: 1, height: 4, borderRadius: 4 },
+  stepContainer: { flexDirection: "row", gap: 8 },
+  stepItem: { flex: 1 },
+  stepBar: { height: 4, borderRadius: 4, marginBottom: 6 },
   stepActive: { backgroundColor: "#fff" },
   stepPending: { backgroundColor: "rgba(255,255,255,0.25)" },
+  stepLabelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  stepFraction: { fontSize: 10, fontWeight: "800" },
+  stepLabel: { fontSize: 10, fontWeight: "500" },
 
-  // Body
+  backBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  backBtnText: { fontSize: 13, fontWeight: "700" },
+
   body: { flex: 1 },
   bodyContent: { padding: 20, paddingBottom: 40 },
   sectionTitle: {
@@ -706,7 +1121,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  // Lecturer card
   card: {
     borderRadius: 16,
     padding: 14,
@@ -723,11 +1137,8 @@ const styles = StyleSheet.create({
   cardName: { fontSize: 15, fontWeight: "800" },
   cardSub: { fontSize: 12, marginTop: 2 },
   statusBadge: { fontSize: 12, fontWeight: "700" },
-
-  // Avatar
   avatar: { alignItems: "center", justifyContent: "center", borderWidth: 1.5 },
 
-  // Calendar
   calendarCard: {
     borderRadius: 16,
     padding: 16,
@@ -738,7 +1149,15 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  calendarMonth: { fontSize: 14, fontWeight: "800", marginBottom: 12 },
+  calendarHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  calNavBtn: { padding: 6 },
+  calNavText: { fontSize: 22, fontWeight: "700", lineHeight: 24 },
+  calendarMonth: { fontSize: 14, fontWeight: "800" },
   calendarGrid: { flexDirection: "row", flexWrap: "wrap" },
   calendarDayCell: {
     width: `${100 / 7}%`,
@@ -746,11 +1165,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingBottom: 6,
   },
-  calendarDayLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    textAlign: "center",
-  },
+  calendarDayLabel: { fontSize: 11, fontWeight: "600", textAlign: "center" },
   calendarCell: {
     width: `${100 / 7}%`,
     aspectRatio: 1,
@@ -769,7 +1184,6 @@ const styles = StyleSheet.create({
   calendarCellText: { fontSize: 14, fontWeight: "500" },
   calendarCellTextSelected: { color: "#fff", fontWeight: "700" },
 
-  // Time slots
   timeGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -786,7 +1200,6 @@ const styles = StyleSheet.create({
   timeChipSelected: { borderColor: "#4C3BCF", backgroundColor: "#F0F3FF" },
   timeChipText: { fontSize: 13, fontWeight: "600" },
 
-  // Mode
   modeRow: { flexDirection: "row", gap: 12, marginBottom: 20 },
   modeChip: {
     flex: 1,
@@ -799,10 +1212,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   modeChipSelected: { borderColor: "#4C3BCF" },
-  modeIcon: { fontSize: 16 },
+  modeIcon: { fontSize: 14, fontWeight: "600" },
   modeText: { fontSize: 14, fontWeight: "600" },
 
-  // Input
   input: {
     borderRadius: 14,
     borderWidth: 1.5,
@@ -829,7 +1241,6 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
 
-  // Primary button
   primaryBtn: {
     borderRadius: 18,
     paddingVertical: 18,
@@ -842,7 +1253,6 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: { color: "#fff", fontSize: 16, fontWeight: "800" },
 
-  // Confirm card
   confirmCard: {
     borderRadius: 20,
     padding: 24,
@@ -887,7 +1297,6 @@ const styles = StyleSheet.create({
   },
   pendingText: { fontSize: 12, fontWeight: "700", textAlign: "center" },
 
-  // States
   centered: {
     flex: 1,
     alignItems: "center",

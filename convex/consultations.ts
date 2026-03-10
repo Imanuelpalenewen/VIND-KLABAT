@@ -93,7 +93,29 @@ export const bookConsultation = mutation({
     return { success: true };
   },
 });
-// ─── Lecturer get consultations ─────────────────────
+
+// ─── getBookedSlots — slot yang sudah terisi untuk dosen di bulan tertentu ────
+export const getBookedSlots = query({
+  args: {
+    lecturerId: v.id("users"),
+    year: v.number(),
+    month: v.number(), // 1-indexed
+  },
+  handler: async (ctx, { lecturerId, year, month }) => {
+    const prefix = `${year}-${String(month).padStart(2, "0")}`;
+    const consultations = await ctx.db
+      .query("consultations")
+      .withIndex("by_lecturer", (q) => q.eq("lecturerId", lecturerId))
+      .filter((q) => q.neq(q.field("status"), "declined"))
+      .collect();
+
+    return consultations
+      .filter((c) => c.date.startsWith(prefix))
+      .map((c) => ({ date: c.date, time: c.time }));
+  },
+});
+
+// ─── getLecturerConsultations — daftar konsultasi untuk dosen ────────────────
 export const getLecturerConsultations = query({
   args: {
     lecturerId: v.id("users"),
@@ -101,11 +123,10 @@ export const getLecturerConsultations = query({
       v.union(
         v.literal("pending"),
         v.literal("accepted"),
-        v.literal("rejected")
-      )
+        v.literal("declined"),
+      ),
     ),
   },
-
   handler: async (ctx, args) => {
     let consultations;
 
@@ -113,7 +134,7 @@ export const getLecturerConsultations = query({
       consultations = await ctx.db
         .query("consultations")
         .withIndex("by_lecturer_status", (q) =>
-          q.eq("lecturerId", args.lecturerId).eq("status", args.status!)
+          q.eq("lecturerId", args.lecturerId).eq("status", args.status!),
         )
         .collect();
     } else {
@@ -123,30 +144,27 @@ export const getLecturerConsultations = query({
         .collect();
     }
 
-    // join student data
     const result = await Promise.all(
       consultations.map(async (c) => {
         const student = await ctx.db.get(c.studentId);
-
         return {
           ...c,
           studentName: student?.name ?? "Unknown",
-          nim: student?.nim ?? "-",
+          nim: student?.nim ?? "—",
         };
-      })
+      }),
     );
 
     return result;
   },
 });
 
-// ─── Lecturer update status ──────────────────────────
+// ─── updateStatus — dosen terima/tolak konsultasi ────────────────────────────
 export const updateStatus = mutation({
   args: {
     consultationId: v.id("consultations"),
-    status: v.union(v.literal("accepted"), v.literal("rejected")),
+    status: v.union(v.literal("accepted"), v.literal("declined")),
   },
-
   handler: async (ctx, args) => {
     await ctx.db.patch(args.consultationId, {
       status: args.status,
