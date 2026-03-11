@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { ReactNode } from "react";
 import {
   ActivityIndicator,
+  Modal,
   StyleProp,
   StyleSheet,
   Text,
@@ -230,6 +231,115 @@ export function EmptyState({
   );
 }
 
+// ─── AppAlert ──────────────────────────────────────────────────────────────────
+export function AppAlert({
+  visible,
+  title,
+  message,
+  type = "info",
+  onClose,
+  onConfirm,
+  confirmText = "OK",
+  cancelText,
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  type?: "info" | "success" | "warning" | "error";
+  onClose: () => void;
+  onConfirm?: () => void;
+  confirmText?: string;
+  cancelText?: string;
+}) {
+  const { colors } = useTheme();
+  const colorMap = {
+    info: colors.primary,
+    success: colors.success,
+    warning: colors.warning,
+    error: colors.danger,
+  };
+  const accentColor = colorMap[type];
+
+  return (
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.alertOverlay}>
+        <View style={[styles.alertCard, { backgroundColor: colors.surface }]}>
+          <View
+            style={[styles.alertAccentBar, { backgroundColor: accentColor }]}
+          />
+          <Text style={[styles.alertTitle, { color: colors.text }]}>
+            {title}
+          </Text>
+          <Text style={[styles.alertMessage, { color: colors.textSub }]}>
+            {message}
+          </Text>
+          <View style={styles.alertBtnRow}>
+            {(onConfirm || cancelText) && (
+              <TouchableOpacity
+                style={[styles.alertBtnOutline, { borderColor: colors.border }]}
+                onPress={onClose}
+              >
+                <Text
+                  style={[
+                    styles.alertBtnOutlineText,
+                    { color: colors.textMuted },
+                  ]}
+                >
+                  {cancelText ?? "Batal"}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.alertBtnFill}
+              onPress={onConfirm ?? onClose}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={["#4C3BCF", "#7B6FF0"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.alertBtnGradient}
+              >
+                <Text style={styles.alertBtnFillText}>{confirmText}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── StatBox ──────────────────────────────────────────────────────────────────
+export function StatBox({
+  value,
+  label,
+  valueColor,
+  subtitle,
+}: {
+  value: number | string;
+  label: string;
+  valueColor: string;
+  subtitle?: string;
+}) {
+  return (
+    <View style={styles.statBox}>
+      <Text style={[styles.statBoxValue, { color: valueColor }]}>{value}</Text>
+      {subtitle && (
+        <Text style={[styles.statBoxSubtitle, { color: valueColor }]}>
+          {subtitle}
+        </Text>
+      )}
+      <Text style={styles.statBoxLabel}>{label}</Text>
+    </View>
+  );
+}
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   gradientHeader: {
@@ -338,4 +448,64 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 48, marginBottom: 12 },
   emptyTitle: { fontSize: 16, fontWeight: "700", textAlign: "center" },
   emptySub: { fontSize: 13, marginTop: 6, textAlign: "center" },
+  alertOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
+  alertCard: {
+    width: "100%",
+    borderRadius: 24,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  alertAccentBar: { height: 5, width: "100%" },
+  alertTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    marginBottom: 8,
+    textAlign: "center",
+    paddingHorizontal: 28,
+    paddingTop: 24,
+  },
+  alertMessage: {
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: "center",
+    marginBottom: 24,
+    paddingHorizontal: 28,
+  },
+  alertBtnRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 28,
+    paddingBottom: 28,
+  },
+  alertBtnOutline: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  alertBtnOutlineText: { fontSize: 14, fontWeight: "700" },
+  alertBtnFill: { flex: 1, borderRadius: 14, overflow: "hidden" },
+  alertBtnGradient: { paddingVertical: 14, alignItems: "center" },
+  alertBtnFillText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  statBox: { flex: 1, alignItems: "center" },
+  statBoxValue: { fontSize: 22, fontWeight: "900", lineHeight: 26 },
+  statBoxSubtitle: { fontSize: 14, fontWeight: "700", marginTop: -2 },
+  statBoxLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginTop: 2,
+    color: "#8B92B8",
+  },
 });

@@ -1,4 +1,4 @@
-import { GradientHeader } from "@/components/ui";
+import { AppAlert, GradientHeader, StatBox } from "@/components/ui";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import useAuth from "@/hooks/useAuth";
@@ -20,166 +20,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const CURRENT_SEMESTER = 6;
 const MAX_CREDITS = 23;
-
-// ─── Custom Alert Modal ───────────────────────────────────────────────────────
-const AppAlert = ({
-  visible,
-  title,
-  message,
-  type = "info",
-  onClose,
-  onConfirm,
-  confirmText = "OK",
-  cancelText,
-}: {
-  visible: boolean;
-  title: string;
-  message: string;
-  type?: "info" | "success" | "warning" | "error";
-  onClose: () => void;
-  onConfirm?: () => void;
-  confirmText?: string;
-  cancelText?: string;
-}) => {
-  const { colors } = useTheme();
-  const colorMap = {
-    info: colors.primary,
-    success: colors.success,
-    warning: colors.warning,
-    error: colors.danger,
-  };
-  const accentColor = colorMap[type];
-
-  return (
-    <Modal
-      transparent
-      animationType="fade"
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <View style={alertStyles.overlay}>
-        <View style={[alertStyles.card, { backgroundColor: colors.surface }]}>
-          <View
-            style={[alertStyles.accentBar, { backgroundColor: accentColor }]}
-          />
-          <Text style={[alertStyles.title, { color: colors.text }]}>
-            {title}
-          </Text>
-          <Text style={[alertStyles.message, { color: colors.textSub }]}>
-            {message}
-          </Text>
-          <View style={alertStyles.btnRow}>
-            {(onConfirm || cancelText) && (
-              <TouchableOpacity
-                style={[alertStyles.btnOutline, { borderColor: colors.border }]}
-                onPress={onClose}
-              >
-                <Text
-                  style={[
-                    alertStyles.btnOutlineText,
-                    { color: colors.textMuted },
-                  ]}
-                >
-                  {cancelText ?? "Batal"}
-                </Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={alertStyles.btnFill}
-              onPress={onConfirm ?? onClose}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={["#4C3BCF", "#7B6FF0"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={alertStyles.btnGradient}
-              >
-                <Text style={alertStyles.btnFillText}>{confirmText}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
-const alertStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 32,
-  },
-  card: {
-    width: "100%",
-    borderRadius: 24,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  accentBar: { height: 5, width: "100%" },
-  title: {
-    fontSize: 18,
-    fontWeight: "900",
-    marginBottom: 8,
-    textAlign: "center",
-    paddingHorizontal: 28,
-    paddingTop: 24,
-  },
-  message: {
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: "center",
-    marginBottom: 24,
-    paddingHorizontal: 28,
-  },
-  btnRow: {
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 28,
-    paddingBottom: 28,
-  },
-  btnOutline: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  btnOutlineText: { fontSize: 14, fontWeight: "700" },
-  btnFill: { flex: 1, borderRadius: 14, overflow: "hidden" },
-  btnGradient: { paddingVertical: 14, alignItems: "center" },
-  btnFillText: { color: "#fff", fontSize: 14, fontWeight: "800" },
-});
-
-// ─── Stat Box ────────────────────────────────────────────────────────────────
-const StatBox = ({
-  value,
-  label,
-  valueColor,
-  subtitle,
-}: {
-  value: number | string;
-  label: string;
-  valueColor: string;
-  subtitle?: string;
-}) => (
-  <View style={styles.statBox}>
-    <Text style={[styles.statValue, { color: valueColor }]}>{value}</Text>
-    {subtitle && (
-      <Text style={[styles.statSubtitle, { color: valueColor }]}>
-        {subtitle}
-      </Text>
-    )}
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
 
 // ─── Course Card ─────────────────────────────────────────────────────────────
 const CourseCard = ({
@@ -620,16 +460,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 5,
     marginBottom: 8,
-  },
-  statBox: { flex: 1, alignItems: "center" },
-  statValue: { fontSize: 22, fontWeight: "900", lineHeight: 26 },
-  statSubtitle: { fontSize: 14, fontWeight: "700", marginTop: -2 },
-  statLabel: {
-    fontSize: 9,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    marginTop: 2,
-    color: "#8B92B8",
   },
   statDivider: { width: 1, height: 32 },
 

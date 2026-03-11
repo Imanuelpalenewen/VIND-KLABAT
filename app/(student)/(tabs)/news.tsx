@@ -124,16 +124,13 @@ const NewsModal = ({
       onRequestClose={onClose}
     >
       <SafeAreaView style={[styles.modalSafe, { backgroundColor: colors.bg }]}>
-        {/* ── Konten scrollable ── */}
         <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Foto cover + gradient fade bawah + tombol back overlay */}
           <View style={styles.modalImageWrapper}>
             <Image
               source={imgSource}
               style={styles.modalImage}
               resizeMode="cover"
             />
-            {/* Fade bawah */}
             <LinearGradient
               colors={["transparent", isDarkMode ? colors.bg : "#ffffff"]}
               start={{ x: 0, y: 0.5 }}
@@ -155,11 +152,9 @@ const NewsModal = ({
               {item.content}
             </Text>
           </View>
-          {/* Spacer supaya konten tidak tertutup tombol back */}
           <View style={{ height: 100 }} />
         </ScrollView>
 
-        {/* ── Back button di bawah, floating ── */}
         <View style={[styles.modalFooter, { backgroundColor: colors.bg }]}>
           <TouchableOpacity
             onPress={onClose}

@@ -4,8 +4,7 @@ import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
-import { ThemeProvider } from "@/hooks/useTheme";
-import useTheme from "@/hooks/useTheme";
+import useTheme, { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider } from "@/hooks/useAuth";
 import * as SplashScreen from "expo-splash-screen";
 

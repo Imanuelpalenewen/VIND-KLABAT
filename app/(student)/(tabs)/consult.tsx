@@ -1,3 +1,4 @@
+import { AppAlert } from "@/components/ui";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import useAuth from "@/hooks/useAuth";
@@ -9,7 +10,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -61,141 +61,6 @@ function getCalendarCells(year: number, month: number): (number | null)[] {
 function formatDate(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
-
-// ─── Custom Alert Modal ───────────────────────────────────────────────────────
-const AppAlert = ({
-  visible,
-  title,
-  message,
-  type = "info",
-  onClose,
-  onConfirm,
-  confirmText = "OK",
-}: {
-  visible: boolean;
-  title: string;
-  message: string;
-  type?: "info" | "success" | "warning" | "error";
-  onClose: () => void;
-  onConfirm?: () => void;
-  confirmText?: string;
-}) => {
-  const { colors } = useTheme();
-  const colorMap = {
-    info: colors.primary,
-    success: colors.success,
-    warning: colors.warning,
-    error: colors.danger,
-  };
-  const accentColor = colorMap[type];
-
-  return (
-    <Modal
-      transparent
-      animationType="fade"
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <View style={alertStyles.overlay}>
-        <View style={[alertStyles.card, { backgroundColor: colors.surface }]}>
-          <View
-            style={[alertStyles.accentBar, { backgroundColor: accentColor }]}
-          />
-          <Text style={[alertStyles.title, { color: colors.text }]}>
-            {title}
-          </Text>
-          <Text style={[alertStyles.message, { color: colors.textSub }]}>
-            {message}
-          </Text>
-          <View style={alertStyles.btnRow}>
-            {onConfirm && (
-              <TouchableOpacity
-                style={[alertStyles.btnOutline, { borderColor: colors.border }]}
-                onPress={onClose}
-              >
-                <Text
-                  style={[
-                    alertStyles.btnOutlineText,
-                    { color: colors.textMuted },
-                  ]}
-                >
-                  Batal
-                </Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={alertStyles.btnFill}
-              onPress={onConfirm ?? onClose}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={["#4C3BCF", "#7B6FF0"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={alertStyles.btnGradient}
-              >
-                <Text style={alertStyles.btnFillText}>{confirmText}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
-const alertStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 32,
-  },
-  card: {
-    width: "100%",
-    borderRadius: 24,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  accentBar: { height: 5, width: "100%" },
-  title: {
-    fontSize: 18,
-    fontWeight: "900",
-    marginBottom: 8,
-    textAlign: "center",
-    paddingHorizontal: 28,
-    paddingTop: 24,
-  },
-  message: {
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: "center",
-    marginBottom: 24,
-    paddingHorizontal: 28,
-  },
-  btnRow: {
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 28,
-    paddingBottom: 28,
-  },
-  btnOutline: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  btnOutlineText: { fontSize: 14, fontWeight: "700" },
-  btnFill: { flex: 1, borderRadius: 14, overflow: "hidden" },
-  btnGradient: { paddingVertical: 14, alignItems: "center" },
-  btnFillText: { color: "#fff", fontSize: 14, fontWeight: "800" },
-});
 
 // ─── Accepted Notification Banner ─────────────────────────────────────────────
 const AcceptedNotif = ({
