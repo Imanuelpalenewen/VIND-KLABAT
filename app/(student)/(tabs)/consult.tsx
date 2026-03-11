@@ -4,6 +4,7 @@ import useAuth from "@/hooks/useAuth";
 import useTheme from "@/hooks/useTheme";
 import { useMutation, useQuery } from "convex/react";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -515,12 +516,17 @@ const PickDateTime = ({
         keyboardShouldPersistTaps="handled"
       >
         <TouchableOpacity
-          style={styles.backBtn}
+          style={[styles.backBtn, { backgroundColor: colors.backgrounds.card }]}
           onPress={onBack}
-          activeOpacity={0.7}
+          activeOpacity={0.75}
         >
-          <Text style={[styles.backBtnText, { color: colors.primary }]}>
-            ← Kembali pilih dosen
+          <View style={[styles.backIcon, { borderColor: colors.border }]}>
+            <Text style={[styles.backChevron, { color: colors.primary }]}>
+              ‹
+            </Text>
+          </View>
+          <Text style={[styles.backLabel, { color: colors.text }]}>
+            Kembali pilih dosen
           </Text>
         </TouchableOpacity>
 
@@ -749,12 +755,15 @@ const ConfirmBooking = ({
     showsVerticalScrollIndicator={false}
   >
     <TouchableOpacity
-      style={styles.backBtn}
+      style={[styles.backBtn, { backgroundColor: colors.backgrounds.card }]}
       onPress={onBack}
-      activeOpacity={0.7}
+      activeOpacity={0.75}
     >
-      <Text style={[styles.backBtnText, { color: colors.primary }]}>
-        ← Kembali ubah jadwal
+      <View style={[styles.backIcon, { borderColor: colors.border }]}>
+        <Text style={[styles.backChevron, { color: colors.primary }]}>‹</Text>
+      </View>
+      <Text style={[styles.backLabel, { color: colors.text }]}>
+        Kembali ubah jadwal
       </Text>
     </TouchableOpacity>
 
@@ -867,6 +876,7 @@ const ConfirmBooking = ({
 export default function ConsultScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
+  const router = useRouter();
 
   const [step, setStep] = useState(0);
   const [lecturer, setLecturer] = useState<Lecturer | null>(null);
@@ -1107,10 +1117,34 @@ const styles = StyleSheet.create({
   backBtn: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
     marginBottom: 12,
     marginTop: 4,
+    alignSelf: "flex-start",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    shadowColor: "#0B1437",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  backBtnText: { fontSize: 13, fontWeight: "700" },
+  backIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backChevron: {
+    fontSize: 18,
+    fontWeight: "800",
+    lineHeight: 22,
+    marginTop: -1,
+  },
+  backLabel: { fontSize: 13, fontWeight: "700" },
 
   body: { flex: 1 },
   bodyContent: { padding: 20, paddingBottom: 40 },

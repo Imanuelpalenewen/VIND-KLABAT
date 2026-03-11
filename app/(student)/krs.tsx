@@ -5,10 +5,11 @@ import useAuth from "@/hooks/useAuth";
 import useTheme from "@/hooks/useTheme";
 import { useMutation, useQuery } from "convex/react";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,6 +20,143 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const CURRENT_SEMESTER = 6;
 const MAX_CREDITS = 23;
+
+// ─── Custom Alert Modal ───────────────────────────────────────────────────────
+const AppAlert = ({
+  visible,
+  title,
+  message,
+  type = "info",
+  onClose,
+  onConfirm,
+  confirmText = "OK",
+  cancelText,
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  type?: "info" | "success" | "warning" | "error";
+  onClose: () => void;
+  onConfirm?: () => void;
+  confirmText?: string;
+  cancelText?: string;
+}) => {
+  const { colors } = useTheme();
+  const colorMap = {
+    info: colors.primary,
+    success: colors.success,
+    warning: colors.warning,
+    error: colors.danger,
+  };
+  const accentColor = colorMap[type];
+
+  return (
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={alertStyles.overlay}>
+        <View style={[alertStyles.card, { backgroundColor: colors.surface }]}>
+          <View
+            style={[alertStyles.accentBar, { backgroundColor: accentColor }]}
+          />
+          <Text style={[alertStyles.title, { color: colors.text }]}>
+            {title}
+          </Text>
+          <Text style={[alertStyles.message, { color: colors.textSub }]}>
+            {message}
+          </Text>
+          <View style={alertStyles.btnRow}>
+            {(onConfirm || cancelText) && (
+              <TouchableOpacity
+                style={[alertStyles.btnOutline, { borderColor: colors.border }]}
+                onPress={onClose}
+              >
+                <Text
+                  style={[
+                    alertStyles.btnOutlineText,
+                    { color: colors.textMuted },
+                  ]}
+                >
+                  {cancelText ?? "Batal"}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={alertStyles.btnFill}
+              onPress={onConfirm ?? onClose}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={["#4C3BCF", "#7B6FF0"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={alertStyles.btnGradient}
+              >
+                <Text style={alertStyles.btnFillText}>{confirmText}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const alertStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
+  card: {
+    width: "100%",
+    borderRadius: 24,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  accentBar: { height: 5, width: "100%" },
+  title: {
+    fontSize: 18,
+    fontWeight: "900",
+    marginBottom: 8,
+    textAlign: "center",
+    paddingHorizontal: 28,
+    paddingTop: 24,
+  },
+  message: {
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: "center",
+    marginBottom: 24,
+    paddingHorizontal: 28,
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 28,
+    paddingBottom: 28,
+  },
+  btnOutline: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  btnOutlineText: { fontSize: 14, fontWeight: "700" },
+  btnFill: { flex: 1, borderRadius: 14, overflow: "hidden" },
+  btnGradient: { paddingVertical: 14, alignItems: "center" },
+  btnFillText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+});
 
 // ─── Stat Box ────────────────────────────────────────────────────────────────
 const StatBox = ({
@@ -94,7 +232,6 @@ const CourseCard = ({
           </Text>
         </View>
       </View>
-
       <TouchableOpacity
         style={[
           styles.checkBtn,
@@ -139,46 +276,53 @@ export default function KRSScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [alert, setAlert] = useState<{
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "error";
+    onConfirm?: () => void;
+    confirmText?: string;
+    cancelText?: string;
+  } | null>(null);
 
   const studentId = user?._id as Id<"users"> | undefined;
 
-  // ── Convex queries ──
   const courses = useQuery(api.courses.getCoursesBySemester, {
     semester: CURRENT_SEMESTER,
   });
-
   const enrollments = useQuery(
     api.courses.getEnrolledCourses,
     studentId ? { studentId, semester: CURRENT_SEMESTER } : "skip",
   );
-
-  // ── Convex mutations ──
-  const enrollCourse = useMutation(api.courses.enrollCourse);
-  const dropCourse = useMutation(api.courses.dropCourse);
-  const submitKRS = useMutation(api.users.submitKRS);
-
   const userRecord = useQuery(
     api.users.getUser,
     studentId ? { userId: studentId } : "skip",
   );
+
+  const enrollCourse = useMutation(api.courses.enrollCourse);
+  const dropCourse = useMutation(api.courses.dropCourse);
+  const submitKRS = useMutation(api.users.submitKRS);
+
   const isSubmitted =
     userRecord === undefined ? false : (userRecord?.krsSubmitted ?? false);
-
   const enrolledIds = new Set(enrollments?.map((e) => e._id.toString()) ?? []);
-
   const totalCredits = enrollments?.reduce((sum, e) => sum + e.credits, 0) ?? 0;
   const enrolledCount = enrollments?.length ?? 0;
 
   const handleToggle = async (courseId: Id<"courses">, isEnrolled: boolean) => {
     if (!studentId) return;
     setLoadingId(courseId.toString());
-
     try {
       if (isEnrolled) {
         const result = await dropCourse({ studentId, courseId });
         if (!result.success) {
-          Alert.alert("Gagal", "Tidak dapat membatalkan mata kuliah ini.");
+          setAlert({
+            title: "Gagal",
+            message: "Tidak dapat membatalkan mata kuliah ini.",
+            type: "error",
+          });
         }
       } else {
         const result = await enrollCourse({
@@ -188,43 +332,52 @@ export default function KRSScreen() {
         });
         if (!result.success) {
           if (result.reason === "exceeds_max_credits") {
-            Alert.alert(
-              "Batas SKS",
-              `Maksimal ${MAX_CREDITS} SKS per semester.`,
-            );
+            setAlert({
+              title: "Batas SKS",
+              message: `Maksimal ${MAX_CREDITS} SKS per semester.`,
+              type: "warning",
+            });
           } else {
-            Alert.alert("Gagal", "Tidak dapat mendaftarkan mata kuliah ini.");
+            setAlert({
+              title: "Gagal",
+              message: "Tidak dapat mendaftarkan mata kuliah ini.",
+              type: "error",
+            });
           }
         }
       }
     } catch {
-      Alert.alert("Error", "Terjadi kesalahan. Coba lagi.");
+      setAlert({
+        title: "Error",
+        message: "Terjadi kesalahan. Coba lagi.",
+        type: "error",
+      });
     } finally {
       setLoadingId(null);
     }
   };
 
   const handleSubmit = () => {
-    Alert.alert(
-      "Konfirmasi Registrasi",
-      `Anda akan mendaftarkan ${enrolledCount} mata kuliah dengan total ${totalCredits} SKS. Setelah di-submit, KRS tidak dapat diubah lagi. Lanjutkan?`,
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Submit",
-          style: "default",
-          onPress: async () => {
-            if (studentId) {
-              await submitKRS({ studentId });
-              Alert.alert("Sukses", "Registrasi KRS berhasil!");
-            }
-          },
-        },
-      ],
-    );
+    setAlert({
+      title: "Konfirmasi Registrasi",
+      message: `Anda akan mendaftarkan ${enrolledCount} mata kuliah dengan total ${totalCredits} SKS. Setelah di-submit, KRS tidak dapat diubah lagi. Lanjutkan?`,
+      type: "info",
+      cancelText: "Batal",
+      confirmText: "Submit",
+      onConfirm: async () => {
+        setAlert(null);
+        if (studentId) {
+          await submitKRS({ studentId });
+          setAlert({
+            title: "Registrasi Berhasil",
+            message: "KRS kamu telah berhasil disubmit.",
+            type: "success",
+          });
+        }
+      },
+    });
   };
 
-  // ── Loading state ──
   if (!courses || !enrollments) {
     return (
       <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -244,11 +397,37 @@ export default function KRSScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      {/* ── Custom Alert ── */}
+      {alert && (
+        <AppAlert
+          visible
+          title={alert.title}
+          message={alert.message}
+          type={alert.type}
+          onClose={() => setAlert(null)}
+          onConfirm={alert.onConfirm}
+          confirmText={alert.confirmText}
+          cancelText={alert.cancelText}
+        />
+      )}
+
       {/* ── HEADER ── */}
       <GradientHeader
         title={isSubmitted ? "Approved Registration" : "Course Registration"}
         subtitle={`KRS — Semester ${CURRENT_SEMESTER}`}
       />
+
+      {/* ── BACK BUTTON ── */}
+      <TouchableOpacity
+        style={[styles.backBtn, { backgroundColor: colors.backgrounds.card }]}
+        onPress={() => router.back()}
+        activeOpacity={0.75}
+      >
+        <View style={[styles.backIcon, { borderColor: colors.border }]}>
+          <Text style={[styles.backChevron, { color: colors.primary }]}>‹</Text>
+        </View>
+        <Text style={[styles.backLabel, { color: colors.text }]}>Kembali</Text>
+      </TouchableOpacity>
 
       {/* ── STATS ── */}
       <View
@@ -262,7 +441,6 @@ export default function KRSScreen() {
         <View
           style={[styles.statDivider, { backgroundColor: colors.divider }]}
         />
-        {/* Credit counter: show as "18 / 23" */}
         <StatBox
           value={totalCredits}
           subtitle={`/ ${MAX_CREDITS}`}
@@ -285,7 +463,7 @@ export default function KRSScreen() {
         />
       </View>
 
-      {/* ── SKS Limit Warning ── */}
+      {/* ── Banners ── */}
       {!isSubmitted && totalCredits >= MAX_CREDITS && (
         <View
           style={[
@@ -297,8 +475,8 @@ export default function KRSScreen() {
           ]}
         >
           <Text style={[styles.warningText, { color: colors.danger }]}>
-            ⚠️ SKS limit reached ({MAX_CREDITS}/{MAX_CREDITS}). Deselect a
-            course to add another.
+            Batas SKS tercapai ({MAX_CREDITS}/{MAX_CREDITS}). Batalkan satu mata
+            kuliah untuk menambah yang lain.
           </Text>
         </View>
       )}
@@ -346,10 +524,11 @@ export default function KRSScreen() {
                 loading={loadingId === course._id.toString()}
                 onToggle={() => {
                   if (isSubmitted) {
-                    Alert.alert(
-                      "Terkunci",
-                      "Anda sudah submit KRS semester ini.",
-                    );
+                    setAlert({
+                      title: "Terkunci",
+                      message: "Anda sudah submit KRS semester ini.",
+                      type: "warning",
+                    });
                     return;
                   }
                   handleToggle(
@@ -392,10 +571,44 @@ export default function KRSScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
+  // Back button
+  backBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    alignSelf: "flex-start",
+    shadowColor: "#0B1437",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  backIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backChevron: {
+    fontSize: 18,
+    fontWeight: "800",
+    lineHeight: 22,
+    marginTop: -1,
+  },
+  backLabel: { fontSize: 13, fontWeight: "700" },
+
   // Stats
   statsCard: {
     marginHorizontal: 16,
-    marginTop: -18,
+    marginTop: 8,
     borderRadius: 18,
     flexDirection: "row",
     alignItems: "center",
@@ -420,7 +633,6 @@ const styles = StyleSheet.create({
   },
   statDivider: { width: 1, height: 32 },
 
-  // SKS banner
   sksBanner: {
     marginHorizontal: 16,
     marginBottom: 4,
@@ -435,7 +647,6 @@ const styles = StyleSheet.create({
   sksProgressLabel: { fontSize: 13, fontWeight: "600" },
   sksProgressValue: { fontSize: 16, fontWeight: "800" },
 
-  // Warning banner
   warningBanner: {
     marginHorizontal: 16,
     marginBottom: 4,
@@ -447,11 +658,9 @@ const styles = StyleSheet.create({
   },
   warningText: { fontSize: 13, fontWeight: "600" },
 
-  // Scroll
   scroll: { flex: 1 },
   scrollContent: { padding: 16, gap: 12 },
 
-  // Card
   card: {
     borderRadius: 18,
     padding: 16,
@@ -483,7 +692,6 @@ const styles = StyleSheet.create({
   },
   sksText: { fontSize: 11, fontWeight: "700" },
 
-  // Check button
   checkBtn: {
     width: 40,
     height: 40,
@@ -533,7 +741,6 @@ const styles = StyleSheet.create({
   plusH: { position: "absolute", width: 14, height: 2, borderRadius: 2 },
   plusV: { position: "absolute", width: 2, height: 14, borderRadius: 2 },
 
-  // Submit
   submitWrapper: { paddingHorizontal: 20, paddingTop: 12 },
   submitBtn: {
     borderRadius: 18,
@@ -552,7 +759,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // States
   centered: {
     flex: 1,
     alignItems: "center",
