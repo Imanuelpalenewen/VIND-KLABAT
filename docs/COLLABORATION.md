@@ -23,14 +23,13 @@ main
       └── feat/lecturer-profile   (Dev 3)
 ```
 
-| Branch | Keterangan |
-|---|---|
-| `main` | Production — hanya Leader yang merge ke sini |
-| `development` | Integration — semua PR diarahkan ke sini |
-| `feat/*` | Branch kerja per fitur, dibuat dari `development` |
+| Branch        | Keterangan                                        |
+| ------------- | ------------------------------------------------- |
+| `main`        | Production — hanya Leader yang merge ke sini      |
+| `development` | Integration — semua PR diarahkan ke sini          |
+| `feat/*`      | Branch kerja per fitur, dibuat dari `development` |
 
 ---
-
 
 ---
 
@@ -39,6 +38,7 @@ main
 ### Langkah-langkah setiap membuat fitur baru:
 
 **1. Clone repo (sekali saja)**
+
 ```bash
 git clone <url-repo>
 cd vind-klabat
@@ -46,18 +46,21 @@ npm install
 ```
 
 **2. Buat file `.env.local`**
+
 ```bash
 # Minta URL dari Leader, lalu:
 echo EXPO_PUBLIC_CONVEX_URL=<minta-ke-leader> > .env.local
 ```
 
 **3. Pastikan branch lokal up-to-date**
+
 ```bash
 git checkout development
 git pull origin development
 ```
 
 **4. Buat branch fitur baru dari `development`**
+
 ```bash
 git checkout -b feat/nama-fitur
 # Contoh:
@@ -65,17 +68,20 @@ git checkout -b feat/student-krs
 ```
 
 **5. Kerjakan fitur, lakukan commit secara berkala**
+
 ```bash
 git add .
 git commit -m "feat: implement KRS screen with course toggle"
 ```
 
 **6. Push branch ke GitHub**
+
 ```bash
 git push -u origin feat/student-krs
 ```
 
 **7. Buat Pull Request ke `development`**
+
 - Buka GitHub → Compare & pull request
 - Base: `development` ← Compare: `feat/student-krs`
 - Isi title dan deskripsi (lihat template di bawah)
@@ -88,16 +94,17 @@ git push -u origin feat/student-krs
 
 Format: `type: deskripsi singkat`
 
-| Type | Kapan digunakan |
-|---|---|
-| `feat` | Menambah fitur baru |
-| `fix` | Memperbaiki bug |
-| `style` | Perubahan tampilan / styling |
+| Type       | Kapan digunakan                       |
+| ---------- | ------------------------------------- |
+| `feat`     | Menambah fitur baru                   |
+| `fix`      | Memperbaiki bug                       |
+| `style`    | Perubahan tampilan / styling          |
 | `refactor` | Refactor kode tanpa mengubah behavior |
-| `chore` | Konfigurasi, dependency, dll |
-| `docs` | Perubahan dokumentasi |
+| `chore`    | Konfigurasi, dependency, dll          |
+| `docs`     | Perubahan dokumentasi                 |
 
 **Contoh:**
+
 ```
 feat: implement student KRS screen with 24 SKS limit validation
 fix: fix dark mode toggle not persisting after reload
@@ -225,15 +232,15 @@ git rebase development
 
 ## 🗃️ Convex: Developer vs Admin
 
-| Kemampuan | Developer | Admin |
-|---|---|---|
-| Akses Convex Dashboard | ✅ | ✅ |
-| Deploy functions | ✅ | ✅ |
-| Lihat & edit data | ✅ | ✅ |
-| Jalankan seed | ✅ | ✅ |
-| Manage team members | ❌ | ✅ |
-| Billing & settings | ❌ | ✅ |
-| Delete project | ❌ | ✅ |
+| Kemampuan              | Developer | Admin |
+| ---------------------- | --------- | ----- |
+| Akses Convex Dashboard | ✅        | ✅    |
+| Deploy functions       | ✅        | ✅    |
+| Lihat & edit data      | ✅        | ✅    |
+| Jalankan seed          | ✅        | ✅    |
+| Manage team members    | ❌        | ✅    |
+| Billing & settings     | ❌        | ✅    |
+| Delete project         | ❌        | ✅    |
 
 > Dev 2 (Daniel) dan Dev 3 (Vanessa) memiliki peran **Developer** — cukup untuk semua kebutuhan coding. Peran **Admin** dipegang Leader (Imanuel).
 
@@ -241,26 +248,26 @@ git rebase development
 
 ## 🔧 Troubleshooting Git
 
-| Masalah | Solusi |
-|---|---|
-| `Your branch is behind 'origin/development'` | `git pull origin development` |
-| Konflik saat merge/rebase | Ikuti langkah resolusi konflik di atas |
-| Tidak bisa push (rejected) | `git pull --rebase origin feat/branch-kamu` lalu push lagi |
-| Commit ke branch yang salah | `git stash`, pindah branch, `git stash pop` |
-| `detached HEAD` state | `git checkout -b nama-branch-baru` untuk menyimpan perubahan |
-| Ingin undo commit terakhir (belum push) | `git reset --soft HEAD~1` |
+| Masalah                                      | Solusi                                                       |
+| -------------------------------------------- | ------------------------------------------------------------ |
+| `Your branch is behind 'origin/development'` | `git pull origin development`                                |
+| Konflik saat merge/rebase                    | Ikuti langkah resolusi konflik di atas                       |
+| Tidak bisa push (rejected)                   | `git pull --rebase origin feat/branch-kamu` lalu push lagi   |
+| Commit ke branch yang salah                  | `git stash`, pindah branch, `git stash pop`                  |
+| `detached HEAD` state                        | `git checkout -b nama-branch-baru` untuk menyimpan perubahan |
+| Ingin undo commit terakhir (belum push)      | `git reset --soft HEAD~1`                                    |
 
 ## 🔧 Troubleshooting Teknis
 
-| Masalah | Solusi |
-|---|---|
-| `Cannot find module '@/...'` | Cek `tsconfig.json` path alias `@/*` |
-| `.env.local` tidak terbaca | Restart Metro: `npx expo start --clear` |
-| Convex `function not found` | Implementasikan fungsi di `convex/*.ts`, deploy ulang |
-| `npm install` error | Coba `npm install --legacy-peer-deps` |
-| Expo Go tidak mau scan QR | Pastikan HP dan laptop di WiFi yang sama |
-| TypeScript error | Jalankan `npx tsc --noEmit` untuk lihat semua error |
+| Masalah                      | Solusi                                                |
+| ---------------------------- | ----------------------------------------------------- |
+| `Cannot find module '@/...'` | Cek `tsconfig.json` path alias `@/*`                  |
+| `.env.local` tidak terbaca   | Restart Metro: `npx expo start --clear`               |
+| Convex `function not found`  | Implementasikan fungsi di `convex/*.ts`, deploy ulang |
+| `npm install` error          | Coba `npm install --legacy-peer-deps`                 |
+| Expo Go tidak mau scan QR    | Pastikan HP dan laptop di WiFi yang sama              |
+| TypeScript error             | Jalankan `npx tsc --noEmit` untuk lihat semua error   |
 
 ---
 
-*Dokumen ini dibuat untuk keperluan kolaborasi tim MiniProject2 — Mobile App Dev A · 2026
+\*Dokumen ini dibuat untuk keperluan kolaborasi tim MiniProject2 — Mobile App Dev A · 2026
