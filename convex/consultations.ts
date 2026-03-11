@@ -70,7 +70,7 @@ export const bookConsultation = mutation({
         q.and(
           q.eq(q.field("date"), args.date),
           q.eq(q.field("time"), args.time),
-          q.neq(q.field("status"), "declined"),
+          q.neq(q.field("status"), "rejected"),
         ),
       )
       .first();
@@ -106,7 +106,7 @@ export const getBookedSlots = query({
     const consultations = await ctx.db
       .query("consultations")
       .withIndex("by_lecturer", (q) => q.eq("lecturerId", lecturerId))
-      .filter((q) => q.neq(q.field("status"), "declined"))
+      .filter((q) => q.neq(q.field("status"), "rejected"))
       .collect();
 
     return consultations
@@ -123,7 +123,7 @@ export const getLecturerConsultations = query({
       v.union(
         v.literal("pending"),
         v.literal("accepted"),
-        v.literal("declined"),
+        v.literal("rejected"),
       ),
     ),
   },
@@ -163,7 +163,7 @@ export const getLecturerConsultations = query({
 export const updateStatus = mutation({
   args: {
     consultationId: v.id("consultations"),
-    status: v.union(v.literal("accepted"), v.literal("declined")),
+    status: v.union(v.literal("accepted"), v.literal("rejected")),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.consultationId, {
