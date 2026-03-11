@@ -18,7 +18,7 @@ export default function Index() {
     } else {
       router.replace("/(lecturer)/(tabs)/" as any);
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, router]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>

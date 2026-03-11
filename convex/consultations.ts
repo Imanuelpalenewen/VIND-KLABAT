@@ -1,19 +1,173 @@
-// ─── Consultations — Dev 2 (booking) & Dev 3 (management) ────────────────────
-//
-// TODO: createBooking         (mutation, Dev 2 — feat/student-consult)
-//   args: { studentId: v.id("users"), lecturerId: v.id("users"),
-//           date: v.string(), time: v.string(), mode: v.string(), topic: v.string() }
-//   - Insert ke tabel consultations dengan status = "pending"
-//
-// TODO: getLecturerConsultations  (query, Dev 3 — feat/lecturer-consult)
-//   args: { lecturerId: v.id("users"), status: v.optional(v.string()) }
-//   - Return permintaan konsultasi untuk dosen, bisa filter by status
-//
-// TODO: getStudentConsultations   (query, Dev 2 — history untuk mahasiswa)
-//   args: { studentId: v.id("users") }
-//   - Return semua booking milik mahasiswa
-//
-// TODO: updateStatus          (mutation, Dev 3 — approve/reject)
-//   args: { consultationId: v.id("consultations"), status: v.string() }
-//   - Patch field status ke "approved" atau "rejected"
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
+// ─── getLecturers — ambil semua user dengan role "lecturer" ──────────────────
+export const getLecturers = query({
+  args: {},
+  handler: async (ctx) => {
+    const lecturers = await ctx.db
+      .query("users")
+      .withIndex("by_role", (q) => q.eq("role", "lecturer"))
+      .collect();
+
+    return lecturers.map((l) => ({
+      _id: l._id,
+      name: l.name,
+      department: l.department ?? "—",
+      title: l.title ?? "",
+    }));
+  },
+});
+
+// ─── getMyConsultations — riwayat konsultasi student ────────────────────────
+export const getMyConsultations = query({
+  args: { studentId: v.id("users") },
+  handler: async (ctx, { studentId }) => {
+    const consultations = await ctx.db
+      .query("consultations")
+      .withIndex("by_student", (q) => q.eq("studentId", studentId))
+      .order("desc")
+      .collect();
+
+    const results = await Promise.all(
+      consultations.map(async (c) => {
+        const lecturer = await ctx.db.get(c.lecturerId);
+        return {
+          _id: c._id,
+          date: c.date,
+          time: c.time,
+          mode: c.mode,
+          topic: c.topic,
+          notes: c.notes,
+          status: c.status,
+          lecturerName: lecturer?.name ?? "—",
+          lecturerDepartment: lecturer?.department ?? "—",
+        };
+      }),
+    );
+
+    return results;
+  },
+});
+
+// ─── bookConsultation — buat booking baru ────────────────────────────────────
+export const bookConsultation = mutation({
+  args: {
+    studentId: v.id("users"),
+    lecturerId: v.id("users"),
+    date: v.string(),
+    time: v.string(),
+    mode: v.union(v.literal("online"), v.literal("offline")),
+    topic: v.string(),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Cek apakah slot waktu sudah diambil lecturer ini
+    const existing = await ctx.db
+      .query("consultations")
+      .withIndex("by_lecturer", (q) => q.eq("lecturerId", args.lecturerId))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("date"), args.date),
+          q.eq(q.field("time"), args.time),
+          q.neq(q.field("status"), "rejected"),
+        ),
+      )
+      .first();
+
+    if (existing) {
+      return { success: false, reason: "slot_taken" };
+    }
+
+    await ctx.db.insert("consultations", {
+      studentId: args.studentId,
+      lecturerId: args.lecturerId,
+      date: args.date,
+      time: args.time,
+      mode: args.mode,
+      topic: args.topic,
+      notes: args.notes,
+      status: "pending",
+    });
+
+    return { success: true };
+  },
+});
+
+// ─── getBookedSlots — slot yang sudah terisi untuk dosen di bulan tertentu ────
+export const getBookedSlots = query({
+  args: {
+    lecturerId: v.id("users"),
+    year: v.number(),
+    month: v.number(), // 1-indexed
+  },
+  handler: async (ctx, { lecturerId, year, month }) => {
+    const prefix = `${year}-${String(month).padStart(2, "0")}`;
+    const consultations = await ctx.db
+      .query("consultations")
+      .withIndex("by_lecturer", (q) => q.eq("lecturerId", lecturerId))
+      .filter((q) => q.neq(q.field("status"), "rejected"))
+      .collect();
+
+    return consultations
+      .filter((c) => c.date.startsWith(prefix))
+      .map((c) => ({ date: c.date, time: c.time }));
+  },
+});
+
+// ─── getLecturerConsultations — daftar konsultasi untuk dosen ────────────────
+export const getLecturerConsultations = query({
+  args: {
+    lecturerId: v.id("users"),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("accepted"),
+        v.literal("rejected"),
+      ),
+    ),
+  },
+  handler: async (ctx, args) => {
+    let consultations;
+
+    if (args.status) {
+      consultations = await ctx.db
+        .query("consultations")
+        .withIndex("by_lecturer_status", (q) =>
+          q.eq("lecturerId", args.lecturerId).eq("status", args.status!),
+        )
+        .collect();
+    } else {
+      consultations = await ctx.db
+        .query("consultations")
+        .withIndex("by_lecturer", (q) => q.eq("lecturerId", args.lecturerId))
+        .collect();
+    }
+
+    const result = await Promise.all(
+      consultations.map(async (c) => {
+        const student = await ctx.db.get(c.studentId);
+        return {
+          ...c,
+          studentName: student?.name ?? "Unknown",
+          nim: student?.nim ?? "—",
+        };
+      }),
+    );
+
+    return result;
+  },
+});
+
+// ─── updateStatus — dosen terima/tolak konsultasi ────────────────────────────
+export const updateStatus = mutation({
+  args: {
+    consultationId: v.id("consultations"),
+    status: v.union(v.literal("accepted"), v.literal("rejected")),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.consultationId, {
+      status: args.status,
+    });
+  },
+});

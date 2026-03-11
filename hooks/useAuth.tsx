@@ -1,4 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import {
   createContext,
   ReactNode,
@@ -13,6 +15,7 @@ export interface AuthUser {
   _id: string;
   name: string;
   username: string;
+  email?: string;
   role: UserRole;
   // Student fields
   nim?: string;
@@ -27,7 +30,7 @@ export interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
-  login: (username: string, password: string, role: UserRole) => Promise<void>;
+  login: (email: string, password: string, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -36,6 +39,7 @@ const AuthContext = createContext<undefined | AuthContextType>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const loginMutation = useMutation(api.users.login);
 
   // Restore session on app start
   useEffect(() => {
@@ -46,38 +50,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (
-    username: string,
-    _password: string,
+    email: string,
+    password: string,
     role: UserRole
   ) => {
     setIsLoading(true);
-    // TODO: Replace mock with real Convex query in login feature branch
-    await new Promise((r) => setTimeout(r, 900));
-
-    const loggedInUser: AuthUser =
-      role === "student"
-        ? {
-            _id: "stu_001",
-            name: "Alex Tendean",
-            username,
-            role: "student",
-            nim: "22416001",
-            program: "S1 Informatika",
-            semester: 5,
-          }
-        : {
-            _id: "lec_001",
-            name: "Dr. Ricky Muntu",
-            username,
-            role: "lecturer",
-            nidn: "0001234567",
-            department: "Informatika",
-            title: "Dosen Tetap",
-          };
-
-    setUser(loggedInUser);
-    await AsyncStorage.setItem("authUser", JSON.stringify(loggedInUser));
-    setIsLoading(false);
+    try {
+      const result = await loginMutation({ email, password, role });
+      const loggedInUser: AuthUser = {
+        _id: result._id,
+        name: result.name,
+        username: result.username,
+        email: result.email ?? undefined,
+        role: result.role,
+        nim: result.nim,
+        program: result.program,
+        semester: result.semester,
+        nidn: result.nidn,
+        department: result.department,
+        title: result.title,
+      };
+      setUser(loggedInUser);
+      await AsyncStorage.setItem("authUser", JSON.stringify(loggedInUser));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = async () => {
@@ -99,5 +96,6 @@ const useAuth = () => {
   }
   return context;
 };
+
 
 export default useAuth;

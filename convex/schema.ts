@@ -5,6 +5,7 @@ export default defineSchema({
   // ─── Users ────────────────────────────────────────────────────────────────
   users: defineTable({
     username: v.string(),       // NIM (student) or NIDN (lecturer)
+    email: v.optional(v.string()),  // Email for login
     password: v.string(),       // Plain text for prototype only
     role: v.union(v.literal("student"), v.literal("lecturer")),
     name: v.string(),
@@ -12,12 +13,14 @@ export default defineSchema({
     nim: v.optional(v.string()),
     program: v.optional(v.string()),
     semester: v.optional(v.number()),
+    krsSubmitted: v.optional(v.boolean()),
     // Lecturer-specific
     nidn: v.optional(v.string()),
     department: v.optional(v.string()),
     title: v.optional(v.string()),
   })
     .index("by_username", ["username"])
+    .index("by_email", ["email"])
     .index("by_role", ["role"]),
 
   // ─── Courses ──────────────────────────────────────────────────────────────
@@ -26,7 +29,7 @@ export default defineSchema({
     name: v.string(),
     credits: v.number(),
     lecturerId: v.id("users"),
-    day: v.string(),          // e.g. "Monday"
+    day: v.union(v.string(), v.array(v.string())), // Can be string ("Monday") or array (["Monday", "Wednesday"])
     time: v.string(),         // e.g. "08:00 - 09:40"
     room: v.string(),
     semester: v.number(),
@@ -70,7 +73,7 @@ export default defineSchema({
     status: v.union(
       v.literal("pending"),
       v.literal("accepted"),
-      v.literal("declined")
+      v.literal("rejected")
     ),
   })
     .index("by_student", ["studentId"])

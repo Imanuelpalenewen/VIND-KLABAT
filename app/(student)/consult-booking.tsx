@@ -4,16 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 import useTheme from "@/hooks/useTheme";
 import { GradientHeader, EmptyState } from "@/components/ui";
 
-// TODO (Dev 2 — feat/student-consult):
-// Buat wizard booking konsultasi 3 langkah:
-// - Step 1: Pilih tanggal dan jam
-// - Step 2: Pilih mode (Online / Offline) dan isi topik konsultasi
-// - Step 3: Halaman konfirmasi → tombol "Kirim Permintaan"
-// - Ambil lecturerId dari route params: useLocalSearchParams()
-// - Mutation: api.consultations.createBooking({ studentId, lecturerId, date, time, mode, topic })
-// - Setelah sukses, router.back() ke halaman consult
-// Komponen: Card, GradientHeader, PrimaryButton dari @/components/ui
-
 export default function ConsultBookingScreen() {
   const { colors } = useTheme();
   const router = useRouter();
